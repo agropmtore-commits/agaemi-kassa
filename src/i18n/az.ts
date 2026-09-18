@@ -479,7 +479,19 @@ export const t = {
   },
   errorScreen: {
     title: 'Xəta baş verdi',
-    text: 'Məlumatın yerindədir. Səhifəni yenilə; təkrarlansa ehtiyat nüsxə çıxar və bizə yaz.',
+    text: 'Məlumatın yerindədir. Əvvəl "Yenilə"; keçməsə aşağıdakı bərpa rejimi ilə məlumatı çıxar və bazanı sıfırla.',
+  },
+  recovery: {
+    title: 'Bərpa rejimi',
+    text: 'Telefonun brauzeri bazanı düzgün aça bilmir (iOS-da bilinən xəta). Məlumat itmir — 3 addım:',
+    step1: '"Məlumatı fayla çıxar" — faylı Telegram (Saved Messages) və ya Fayllar-a saxla',
+    step2: '"Bazanı sıfırla" — tətbiq sıfırdan açılır',
+    step3: 'Daha çox → Ehtiyat nüsxə → Fayldan bərpa et → həmin faylı seç → "Əvəz et"',
+    save: 'Məlumatı fayla çıxar',
+    saved: (txs: number, wallets: number) => `Fayl hazırdır: ${txs} əməliyyat, ${wallets} cüzdan. İndi 2-ci addım.`,
+    reset: 'Bazanı sıfırla',
+    resetConfirm: 'Faylı saxladınmı? Sıfırlandıqdan sonra məlumat yalnız fayldan qayıdır.',
+    failed: 'Alınmadı',
   },
   sheet: {
     close: 'Bağla',
