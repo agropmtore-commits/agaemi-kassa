@@ -1,7 +1,7 @@
 {
   "name": "agaemi-kassa",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
   "description": "Agaemi üçün şəxsi büdcə və kassa sistemi (PWA)",
   "scripts": {

@@ -106,6 +106,28 @@ export interface Attachment {
   created_at: string;
 }
 
+export type RecurringPeriod = 'monthly' | 'weekly';
+
+/** Təkrarlanan əməliyyat — xatırlatma + bir toxunuşla yazma (avtomatik yazılmır: qərar #38). */
+export interface Recurring {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+  /** qəpiklə */
+  amount: number;
+  category_id: string;
+  /** boş = sonuncu istifadə olunan cüzdan */
+  wallet_id?: string;
+  note?: string;
+  period: RecurringPeriod;
+  /** monthly: ayın günü 1–28; weekly: həftənin günü 1 (B.e.) – 7 (Bazar) */
+  day: number;
+  /** növbəti gözlənilən tarix YYYY-MM-DD */
+  next_date: string;
+  is_active: Flag;
+  created_at: string;
+}
+
 export interface SettingRow<K extends keyof Settings = keyof Settings> {
   key: K;
   value: Settings[K];
@@ -145,6 +167,7 @@ export class KassaDB extends Dexie {
   templates!: EntityTable<Template, 'id'>;
   budgets!: EntityTable<Budget, 'id'>;
   attachments!: EntityTable<Attachment, 'id'>;
+  recurring!: EntityTable<Recurring, 'id'>;
   settings!: EntityTable<SettingRow, 'key'>;
 
   constructor(name = 'agaemi-kassa') {
@@ -163,6 +186,10 @@ export class KassaDB extends Dexie {
     // v2: siyahı sıralaması üçün [date+created_at] indeksi (Mərhələ 2)
     this.version(2).stores({
       transactions: 'id, date, type, wallet_id, to_wallet_id, category_id, debt_id, [type+date], [date+created_at]',
+    });
+    // v3: təkrarlanan əməliyyatlar (istəyə bağlı bənd)
+    this.version(3).stores({
+      recurring: 'id, next_date, is_active',
     });
     this.on('populate', () => seedDatabase(this));
     // Köhnə bazalar: yeni sistem kateqoriyaları (Mərhələ 6) açılışda əlavə olunur

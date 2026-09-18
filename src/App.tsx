@@ -20,6 +20,7 @@ import { DebtDetailPage } from './features/debts/DebtDetailPage';
 import { GoalsPage } from './features/goals/GoalsPage';
 import { GoalDetailPage } from './features/goals/GoalDetailPage';
 import { ExportPage } from './features/settings/ExportPage';
+import { RecurringPage } from './features/recurring/RecurringPage';
 import { cleanupOrphanAttachments } from './db/attachments';
 import { LockScreen } from './features/pin/LockScreen';
 import { useSettings } from './hooks/useData';
@@ -76,6 +77,7 @@ export function App() {
               <Route path="more/goals" element={<GoalsPage />} />
               <Route path="more/goals/:id" element={<GoalDetailPage />} />
               <Route path="more/export" element={<ExportPage />} />
+              <Route path="more/recurring" element={<RecurringPage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
             <Route path="add" element={<TransactionFormPage />} />

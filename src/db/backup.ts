@@ -1,5 +1,5 @@
 import {
-  db, type Attachment, type Budget, type Category, type Debt, type KassaDB, type SettingRow, type Template, type Transaction, type Wallet,
+  db, type Attachment, type Budget, type Category, type Debt, type KassaDB, type Recurring, type SettingRow, type Template, type Transaction, type Wallet,
 } from './schema';
 import { todayLocal } from '../domain/dates';
 
@@ -16,6 +16,8 @@ export interface BackupData {
   debts: Debt[];
   templates: Template[];
   settings: SettingRow[];
+  /** v1.5+ — köhnə fayllarda yoxdur */
+  recurring?: Recurring[];
 }
 
 export interface BackupFile {
@@ -37,7 +39,7 @@ export class BackupError extends Error {
 const SECRET_SETTINGS = new Set(['pin_hash', 'pin_salt', 'recovery_hash']);
 
 export async function createBackup(database: KassaDB = db): Promise<BackupFile> {
-  const [wallets, categories, transactions, budgets, debts, templates, settings] = await Promise.all([
+  const [wallets, categories, transactions, budgets, debts, templates, settings, recurring] = await Promise.all([
     database.wallets.toArray(),
     database.categories.toArray(),
     database.transactions.toArray(),
@@ -45,6 +47,7 @@ export async function createBackup(database: KassaDB = db): Promise<BackupFile> 
     database.debts.toArray(),
     database.templates.toArray(),
     database.settings.toArray(),
+    database.recurring.toArray(),
   ]);
   return {
     app: BACKUP_APP,
@@ -58,6 +61,7 @@ export async function createBackup(database: KassaDB = db): Promise<BackupFile> 
       debts,
       templates,
       settings: settings.filter((s) => !SECRET_SETTINGS.has(s.key)),
+      recurring,
     },
   };
 }
@@ -90,6 +94,7 @@ export function parseBackup(text: string): BackupFile {
   if (b.format !== BACKUP_FORMAT) throw new BackupError('format');
   if (!b.data || typeof b.data !== 'object') throw new BackupError('invalid');
   const data = b.data as Partial<BackupData>;
+  if (data.recurring !== undefined && !Array.isArray(data.recurring)) throw new BackupError('invalid');
   for (const table of TABLES) {
     const rows: unknown = data[table];
     if (!Array.isArray(rows)) throw new BackupError('invalid');
@@ -115,7 +120,7 @@ export async function importBackup(backup: BackupFile, mode: ImportMode, databas
   const { data } = backup;
   await database.transaction(
     'rw',
-    [database.wallets, database.categories, database.transactions, database.budgets, database.debts, database.templates, database.settings],
+    [database.wallets, database.categories, database.transactions, database.budgets, database.debts, database.templates, database.settings, database.recurring],
     async () => {
       if (mode === 'replace') {
         await Promise.all([
@@ -125,6 +130,7 @@ export async function importBackup(backup: BackupFile, mode: ImportMode, databas
           database.budgets.clear(),
           database.debts.clear(),
           database.templates.clear(),
+          database.recurring.clear(),
         ]);
         const keep = (await database.settings.toArray()).filter((s) => SECRET_SETTINGS.has(s.key) || s.key === 'theme');
         await database.settings.clear();
@@ -136,6 +142,7 @@ export async function importBackup(backup: BackupFile, mode: ImportMode, databas
       await database.budgets.bulkPut(data.budgets);
       await database.debts.bulkPut(data.debts);
       await database.templates.bulkPut(data.templates);
+      if (data.recurring?.length) await database.recurring.bulkPut(data.recurring);
       await database.settings.put({ key: 'onboarded', value: true });
     },
   );

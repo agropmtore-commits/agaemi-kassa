@@ -11,6 +11,10 @@ import { TxRow } from '../../components/TxRow';
 import { useBalances, useCategoryMap, useDebtMap, useDebtMovements, useMonthTransactions, useRecentTransactions, useSettings, useWalletMap } from '../../hooks/useData';
 import { debtSummary } from '../../domain/debt';
 import { goalProgress } from '../../domain/goal';
+import { dueRecurring } from '../../domain/recurring';
+import { skipOccurrence, writeOccurrence } from '../../db/recurring';
+import { TxValidationError } from '../../db/transactions';
+import { useToast } from '../../components/Toast';
 import { shortDate, todayLocal } from '../../domain/dates';
 import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
@@ -34,6 +38,21 @@ export function DashboardPage() {
   const debtMovements = useDebtMovements();
   const today = todayLocal();
   const debtInfo = useMemo(() => (debts && debtMovements ? debtSummary([...debts.values()], debtMovements, today) : undefined), [debts, debtMovements, today]);
+  const toast = useToast();
+  const recurringRules = useLiveQuery(() => db.recurring.toArray(), []);
+  const dueRules = useMemo(() => (recurringRules ? dueRecurring(recurringRules, today) : []), [recurringRules, today]);
+  const dueRule = dueRules[0];
+
+  async function writeDue() {
+    if (!dueRule) return;
+    try {
+      const created = await writeOccurrence(dueRule.id);
+      toast({ message: `${t.recurring.written(dueRule.name)} · ${formatMoney(created.amount)}` });
+    } catch (e) {
+      if (e instanceof TxValidationError) toast({ message: e.errors.map((x) => t.form.errors[x]).join(' · '), duration: 6000 });
+      else throw e;
+    }
+  }
   const settings = useSettings();
   const txCount = useLiveQuery(() => db.transactions.count(), []);
 
@@ -62,6 +81,18 @@ export function DashboardPage() {
 
       {over.length > 0 && <Banner kind="danger">{t.budgets.exceededBanner(over.map((p) => nameOf(p.category_id)).join(', '))}</Banner>}
       {warn.length > 0 && <Banner kind="warn">{t.budgets.warnBanner(warn.map((p) => nameOf(p.category_id)).join(', '))}</Banner>}
+      {dueRule && (
+        <Banner
+          kind="info"
+          actions={[
+            { label: t.recurring.write, onClick: () => void writeDue(), primary: true },
+            { label: t.recurring.skip, onClick: () => void skipOccurrence(dueRule.id).then(() => toast({ message: t.recurring.skipped(dueRule.name) })) },
+          ]}
+        >
+          🔁 {t.recurring.due(dueRule.name, formatMoney(dueRule.amount), shortDate(dueRule.next_date, today))}
+          {dueRules.length > 1 ? ` (+${dueRules.length - 1})` : ''}
+        </Banner>
+      )}
       {debtInfo && debtInfo.overdue.length > 0 && (
         <Banner kind="warn" action={{ label: t.debts.title, onClick: () => navigate('/more/debts') }}>
           {t.debts.overdueBanner(debtInfo.overdue.map((d) => `${d.person} (${shortDate(d.due_date!, today)})`).join(', '))}

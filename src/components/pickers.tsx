@@ -64,10 +64,13 @@ export function Banner({
   kind,
   children,
   action,
+  actions,
 }: {
   kind: 'info' | 'warn' | 'danger';
   children: ReactNode;
   action?: { label: string; onClick: () => void };
+  /** bir neçə düymə (məs. "Yaz" / "Keç") */
+  actions?: { label: string; onClick: () => void; primary?: boolean }[];
 }) {
   const style = {
     info: 'bg-brand-100 text-brand-700 dark:bg-brand-700/30 dark:text-brand-100',
@@ -79,11 +82,11 @@ export function Banner({
     <div role={kind === 'info' ? 'status' : 'alert'} className={`mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${style}`}>
       <Icon size={18} className="shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">{children}</span>
-      {action && (
-        <button type="button" onClick={action.onClick} className="shrink-0 rounded-lg bg-white/60 px-2 py-1 text-xs font-semibold dark:bg-black/20">
-          {action.label}
+      {[...(action ? [action] : []), ...(actions ?? [])].map((a) => (
+        <button key={a.label} type="button" onClick={a.onClick} className={`shrink-0 rounded-lg px-2 py-1 text-xs font-semibold ${'primary' in a && a.primary ? 'bg-brand-600 text-white' : 'bg-white/60 dark:bg-black/20'}`}>
+          {a.label}
         </button>
-      )}
+      ))}
     </div>
   );
 }

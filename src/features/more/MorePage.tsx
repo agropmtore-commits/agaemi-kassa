@@ -19,6 +19,7 @@ const ITEMS: Item[] = [
   { label: t.more.backup, icon: '💾', to: '/more/backup' },
   { label: t.more.exportData, icon: '📊', to: '/more/export' },
   { label: t.more.templates, icon: '⚡', to: '/more/templates' },
+  { label: t.more.recurring, icon: '🔁', to: '/more/recurring' },
   { label: t.more.debts, icon: '🤝', to: '/more/debts' },
   { label: t.more.goals, icon: '🎯', to: '/more/goals' },
   { label: t.more.settings, icon: '⚙️', to: '/more/settings' },
