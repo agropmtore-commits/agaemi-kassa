@@ -1,10 +1,12 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { TransactionFormPage } from './features/transactions/TransactionFormPage';
-import { StatsPage } from './features/stats/StatsPage';
+// Statistika (Recharts) ayrıca yüklənir — ilk açılış yüngül qalsın; service worker onu da önbelləyir
+const StatsPage = lazy(() => import('./features/stats/StatsPage').then((m) => ({ default: m.StatsPage })));
 import { MorePage } from './features/more/MorePage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import { useSetting } from './hooks/useData';
@@ -32,7 +34,14 @@ export function App() {
             <Route element={<AppShell />}>
               <Route index element={<DashboardPage />} />
               <Route path="transactions" element={<TransactionsPage />} />
-              <Route path="stats" element={<StatsPage />} />
+              <Route
+                path="stats"
+                element={
+                  <Suspense fallback={null}>
+                    <StatsPage />
+                  </Suspense>
+                }
+              />
               <Route path="more" element={<MorePage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
