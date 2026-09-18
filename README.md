@@ -4,7 +4,7 @@ Agaemi üçün şəxsi (ev) büdcə və kassa sistemi. Məqsəd — əlinə gəl
 **mədaxil**, xərclədiyi hər pulu **məxaric** kimi qeyd etmək və istənilən anda
 pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını** görmək.
 
-> **Status:** Mərhələ 1 — skelet (lokal hazır, deploy gözlənilir).
+> **Status:** Mərhələ 1 tamamlandı — canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Mərhələ 2.
 > Agaemi üçün sadə dildə xülasə: [AGAEMI_UCUN.md](AGAEMI_UCUN.md)
 
 ---
@@ -334,13 +334,13 @@ Settings
 | Hash | Web Crypto API (SHA-256) |
 | Hosting | GitHub Pages (GitHub Actions ilə avtomatik deploy) |
 
-**Necə işləyir:** kod GitHub-a push olunur → Actions build edir → `https://<user>.github.io/agaemi-kassa` yenilənir → Agaemi tətbiqi açanda yeni versiya yüklənir. Agaeminin məlumatı heç vaxt telefondan çıxmır.
+**Necə işləyir:** kod GitHub-a push olunur → Actions build edir → https://agropmtore-commits.github.io/agaemi-kassa/ yenilənir → Agaemi tətbiqi açanda yeni versiya yüklənir. Agaeminin məlumatı heç vaxt telefondan çıxmır.
 
 ## 11. Mərhələlər
 
 - [x] **Mərhələ 0 — Plan** — 18 sentyabr 2026
-- [ ] **Mərhələ 1 — Skelet** ← *burdayıq*: Vite + React + TS + Tailwind + PWA; Dexie sxemi; default cüzdanlar/kateqoriyalar; 4 tab; GitHub Pages — ilk link
-- [ ] **Mərhələ 2 — Əməliyyatlar**: mədaxil / məxaric / köçürmə formu; siyahı, filtr, axtarış, redaktə, silmə; cüzdan qalıqları
+- [x] **Mərhələ 1 — Skelet** — 18 sentyabr 2026: Vite + React + TS + Tailwind + PWA; Dexie sxemi; default cüzdanlar/kateqoriyalar; 4 tab; GitHub Pages — ilk link
+- [ ] **Mərhələ 2 — Əməliyyatlar** ← *növbəti*: mədaxil / məxaric / köçürmə formu; siyahı, filtr, axtarış, redaktə, silmə; cüzdan qalıqları
 - [ ] **Mərhələ 3 — Panel və statistika**: ana panel; diaqramlar, dövr seçimi, müqayisə
 - [ ] **Mərhələ 4 — Büdcə, ayarlar, backup**: limitlər və xəbərdarlıq; cüzdan/kateqoriya idarəetməsi; JSON ixrac/idxal + xatırlatma
 - [ ] ✅ **MVP hazır — Agaemi istifadəyə başlayır**, real rəy toplanır
@@ -440,4 +440,7 @@ npm run icons      # public/icons/*.png-ni SVG-dən yenidən yarat (sharp)
 **Plan v1 — tamamlandı (18 sentyabr 2026).** 23 qərar verildi (bölmə 0). Açıq sual qalmayıb.
 
 - [ ] `AGAEMI_UCUN.md` Agaemiyə göstərilir, rəyi alınır (xüsusən kateqoriya siyahısı və şablon nümunələri)
-- [x] Mərhələ 1 başladı — 18 sentyabr 2026
+- [x] Mərhələ 1 — skelet canlıdır (18 sentyabr 2026)
+  - Repo: https://github.com/agropmtore-commits/agaemi-kassa (public)
+  - Link: https://agropmtore-commits.github.io/agaemi-kassa/
+  - Yoxlanıb: panel + seed, 4 tab, hər iki tema, service worker, dərin link (404 fallback), konsol təmiz
