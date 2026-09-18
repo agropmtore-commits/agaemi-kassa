@@ -10,6 +10,7 @@ import { Card, SectionTitle } from '../../components/ui';
 import { TxRow } from '../../components/TxRow';
 import { useBalances, useCategoryMap, useDebtMap, useDebtMovements, useMonthTransactions, useRecentTransactions, useSettings, useWalletMap } from '../../hooks/useData';
 import { debtSummary } from '../../domain/debt';
+import { goalProgress } from '../../domain/goal';
 import { shortDate, todayLocal } from '../../domain/dates';
 import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
@@ -142,6 +143,46 @@ export function DashboardPage() {
           </p>
         )}
       </section>
+
+      {/* Hədəflər — yalnız varsa */}
+      {balances && balances.wallets.some((w) => w.type === 'savings') && (
+        <section className="mt-4">
+          <SectionTitle
+            right={
+              <Link to="/more/goals" className="text-sm font-medium text-brand-600">
+                {t.dashboard.seeAll} →
+              </Link>
+            }
+          >
+            {t.goals.title}
+          </SectionTitle>
+          <Card className="divide-y divide-(--app-border) overflow-hidden">
+            {balances.wallets
+              .filter((w) => w.type === 'savings')
+              .slice(0, 3)
+              .map((g) => {
+                const p = goalProgress(g, balances.byWallet.get(g.id) ?? 0, today);
+                const pct = Math.round(p.ratio * 100);
+                return (
+                  <Link key={g.id} to={`/more/goals/${g.id}`} className="block px-4 py-2.5">
+                    <span className="flex items-baseline justify-between gap-2 text-sm">
+                      <span className="truncate font-medium">
+                        {g.icon} {g.name}
+                        {p.done ? ' ✅' : ''}
+                      </span>
+                      <span className="tabular shrink-0 text-savings">
+                        {formatMoney(p.saved, { symbol: false })} / {formatMoney(p.target)} · {pct} %
+                      </span>
+                    </span>
+                    <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-(--app-border)">
+                      <span className="block h-full rounded-full bg-savings" style={{ width: `${Math.min(100, Math.max(pct, 1))}%` }} />
+                    </span>
+                  </Link>
+                );
+              })}
+          </Card>
+        </section>
+      )}
 
       {/* Büdcə */}
       <section className="mt-4">

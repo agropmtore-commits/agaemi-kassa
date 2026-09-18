@@ -4,7 +4,7 @@ Agaemi üçün şəxsi (ev) büdcə və kassa sistemi. Məqsəd — əlinə gəl
 **mədaxil**, xərclədiyi hər pulu **məxaric** kimi qeyd etmək və istənilən anda
 pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını** görmək.
 
-> **Status:** **v1.2.0** — Mərhələ 1–6 tamamlandı (MVP + şablonlar, PIN, borc izləmə). Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaeminin rəyi; Mərhələ 7 (yığım hədəfi).
+> **Status:** **v1.3.0** — Mərhələ 1–7 tamamlandı (MVP + şablonlar, PIN, borc, yığım hədəfi). Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaeminin rəyi; Mərhələ 8 (qəbz şəkli, ZIP, Excel).
 > Agaemi üçün sadə dildə xülasə: [AGAEMI_UCUN.md](AGAEMI_UCUN.md)
 
 ---
@@ -46,6 +46,7 @@ pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını
 | 31 | PIN kilidi | PBKDF2-SHA256 hash; sessiya `sessionStorage`-də — tam bağlananda kilid, arxa planda vaxta görə; **ekran kilididir, şifrələmə deyil** (Ayarlarda yazılıb) | Server yoxdur; dürüstlük |
 | 32 | Borc bağışlama | Qalan məbləğ **xərc ("Borc itkisi") / gəlir ("Bağışlanmış borc")** kimi yazılır + eyni məbləğdə əks borc hərəkəti — cüzdan dəyişmir, statistika itkini göstərir; sistem kateqoriyaları seçim siyahılarında çıxmır | Pul artıq gedib; itki ayın mənzərəsində görünsün |
 | 33 | Borc hərəkətləri | Formda redaktə olunmur — yalnız borc detalından (qaytarmanı sil, borcu sil); açılış məbləği "Dəyiş" ilə düzəlir | Qalan məbləğ hesablaması pozulmasın |
+| 34 | Hədəfi bağlamaq | Yalnız qalıq 0 olanda (əvvəl "Geri götür") — cüzdan arxiv qaydası (#28) ilə eyni; hədəfə çatanda ✅ göstərilir, pul geri götürülənə qədər "yığım"da qalır | Pul "itməsin" |
 
 ## 1. Problem / Məqsəd
 
@@ -357,8 +358,8 @@ Settings
 - [x] ✅ **MVP hazır (v1.0.0, 18 sentyabr 2026)** — Agaemi istifadəyə başlayır, real rəy toplanır
 - [x] **Mərhələ 5 — Rahatlıq** — 18 sentyabr 2026: şablonlar (çiplər + idarə), PIN kilidi (bərpa sözü, vaxt limiti), qaranlıq rejim (Mərhələ 4-dən)
 - [x] **Mərhələ 6 — Borc izləmə** — 18 sentyabr 2026: verdim / aldım, qismən qaytarma, bağışlama, vaxtı keçən xəbərdarlığı, paneldə xülasə
-- [ ] **Mərhələ 7 — Yığım hədəfi** ← *növbəti*
-- [ ] **Mərhələ 8 — Qəbz şəkli, tam backup (ZIP), Excel/CSV ixrac**
+- [x] **Mərhələ 7 — Yığım hədəfi** — 18 sentyabr 2026: hədəf = yığım cüzdanı + məbləğ + son tarix; pul qoy / geri götür (köçürmə); proqres + "ayda X lazımdır"; paneldə sərbəst / yığım
+- [ ] **Mərhələ 8 — Qəbz şəkli, tam backup (ZIP), Excel/CSV ixrac** ← *növbəti*
 - [ ] **Sonra (istəyə bağlı)**: Capacitor APK, Google Drive backup, təkrarlanan əməliyyatlar
 
 ## 12. Necə işləyəcəyik
@@ -451,6 +452,7 @@ npm run icons      # public/icons/*.png-ni SVG-dən yenidən yarat (sharp)
 **Plan v1 — tamamlandı (18 sentyabr 2026).** 23 qərar verildi (bölmə 0). Açıq sual qalmayıb.
 
 - [ ] `AGAEMI_UCUN.md` Agaemiyə göstərilir, rəyi alınır (xüsusən kateqoriya siyahısı və şablon nümunələri)
+- [x] Mərhələ 7 — yığım hədəfi (18 sentyabr 2026): Hədəflər səhifəsi (proqres, %, son tarix), detal (yığılıb / hədəf, ayda X lazımdır, Pul qoy / Geri götür = köçürmə, dəyiş, bağla), paneldə Hədəflər bölməsi və "Sərbəst · Yığım" sətri; yığım cüzdanları Cüzdanlar səhifəsində yox, Hədəflərdədir
 - [x] Mərhələ 6 — borc izləmə (18 sentyabr 2026): Borclar səhifəsi (xülasə, açıq / bağlı, yeni borc), detal (qalan, hərəkətlər, qaytarma, bağışlama, düzəliş, silmə), paneldə xülasə sətri + vaxtı keçən banner, siyahıda "Əli · Qaytarıldı" sətirləri və Borc filtri
 - [x] Mərhələ 5 — rahatlıq (18 sentyabr 2026): şablonlar (əlavə et ekranında ⚡ çiplər → kateqoriya məlumdursa birbaşa "Yadda saxla"; ən çox istifadə olunan önə), PIN kilidi (onboarding addımı + Ayarlar: qoy / dəyiş / sil, bərpa sözü ilə bərpa, vaxt limiti)
 - [x] Mərhələ 4 — büdcə, ayarlar, backup (18 sentyabr 2026): kateqoriya/ümumi aylıq limitlər (panel: yaşıl/sarı/qırmızı + banner), cüzdan və kateqoriya idarəetməsi (ad, ikon, rəng, arxiv qaydaları), JSON ixrac (paylaş/yüklə) və idxal (əvəz et/birləşdir), backup xatırlatması, tema, sıfırlama

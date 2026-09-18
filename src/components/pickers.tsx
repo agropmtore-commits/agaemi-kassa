@@ -12,6 +12,7 @@ export const EXPENSE_EMOJIS = [
   '🏦', '💳', '🧾', '📦', '💸', '🎯',
 ];
 export const INCOME_EMOJIS = ['💼', '🛠️', '🎁', '🏷️', '💰', '🏦', '📈', '🤝', '🎓', '🏠', '💵', '🪙'];
+export const GOAL_EMOJIS = ['🎯', '📱', '💻', '🚗', '🏠', '✈️', '🏖️', '🎓', '💍', '👶', '🛋️', '🚲', '🎁', '🐖', '🏥', '📚'];
 export const WALLET_EMOJIS = ['💵', '💳', '🏦', '🐖', '👛', '💰', '🪙', '📱', '🔐', '👝'];
 
 /** dataviz istinad palitrası (8 slot) + 4 əlavə ton + neytral boz — seed ilə eynidir */

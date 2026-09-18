@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { Plus } from 'lucide-react';
 import { AmountSheet, Sheet } from '../../components/Sheet';
 import { Card, PrimaryButton, SectionTitle, Segmented, TopBar } from '../../components/ui';
@@ -21,8 +22,10 @@ export function WalletsPage() {
   const [balanceEdit, setBalanceEdit] = useState<Wallet | null>(null);
   const [error, setError] = useState('');
 
-  const active = (wallets ?? []).filter((w) => !w.is_archived);
-  const archived = (wallets ?? []).filter((w) => w.is_archived);
+  // Yığım cüzdanları (hədəflər) öz səhifəsində idarə olunur
+  const active = (wallets ?? []).filter((w) => !w.is_archived && w.type !== 'savings');
+  const archived = (wallets ?? []).filter((w) => w.is_archived && w.type !== 'savings');
+  const hasGoals = (wallets ?? []).some((w) => w.type === 'savings');
 
   function openNew() {
     setError('');
@@ -89,6 +92,11 @@ export function WalletsPage() {
         }
       />
       <Card className="divide-y divide-(--app-border) overflow-hidden">{rows(active)}</Card>
+      {hasGoals && (
+        <Link to="/more/goals" className="mt-2 block px-1 text-sm text-brand-600">
+          {t.goals.walletsNote} →
+        </Link>
+      )}
       {archived.length > 0 && (
         <section className="mt-4">
           <SectionTitle>{t.wallets.archived}</SectionTitle>

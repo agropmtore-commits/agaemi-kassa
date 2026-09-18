@@ -17,6 +17,8 @@ import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import { TemplatesPage } from './features/templates/TemplatesPage';
 import { DebtsPage } from './features/debts/DebtsPage';
 import { DebtDetailPage } from './features/debts/DebtDetailPage';
+import { GoalsPage } from './features/goals/GoalsPage';
+import { GoalDetailPage } from './features/goals/GoalDetailPage';
 import { LockScreen } from './features/pin/LockScreen';
 import { useSettings } from './hooks/useData';
 import { useLock } from './hooks/useLock';
@@ -64,6 +66,8 @@ export function App() {
               <Route path="more/templates" element={<TemplatesPage />} />
               <Route path="more/debts" element={<DebtsPage />} />
               <Route path="more/debts/:id" element={<DebtDetailPage />} />
+              <Route path="more/goals" element={<GoalsPage />} />
+              <Route path="more/goals/:id" element={<GoalDetailPage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
             <Route path="add" element={<TransactionFormPage />} />
