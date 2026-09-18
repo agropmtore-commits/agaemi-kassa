@@ -122,6 +122,8 @@ export interface Settings {
   backup_reminder_days: number;
   /** onboarding tamamlanıb? */
   onboarded: boolean;
+  /** əlavə et formunda default cüzdan — sonuncu istifadə olunan */
+  last_wallet_id?: string;
   /** DB-nin ilk yaradılma vaxtı — backup faylının mənşəyini tanımaq üçün */
   installed_at: string;
 }
@@ -158,6 +160,10 @@ export class KassaDB extends Dexie {
       attachments: 'id, transaction_id',
       settings: 'key',
     });
+    // v2: siyahı sıralaması üçün [date+created_at] indeksi (Mərhələ 2)
+    this.version(2).stores({
+      transactions: 'id, date, type, wallet_id, to_wallet_id, category_id, debt_id, [type+date], [date+created_at]',
+    });
     this.on('populate', () => seedDatabase(this));
   }
 }
@@ -170,12 +176,4 @@ export function newId(): string {
 
 export function nowIso(): string {
   return new Date().toISOString();
-}
-
-/** Yerli tarix 'YYYY-MM-DD' — UTC-yə çevirmədən (gecə yarısı problemi olmasın) */
-export function todayLocal(d = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }

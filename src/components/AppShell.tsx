@@ -1,12 +1,10 @@
 import { Outlet } from 'react-router';
 import { BottomNav } from './BottomNav';
 import { ReloadPrompt } from './ReloadPrompt';
-import { useTheme } from '../hooks/useTheme';
 import { t } from '../i18n/az';
 
 /** Tab səhifələrinin ümumi çərçivəsi: məzmun + aşağı naviqasiya. */
 export function AppShell() {
-  useTheme();
   return (
     <div className="mx-auto min-h-full max-w-md">
       {/* pb: aşağı naviqasiyanın hündürlüyü + safe-area */}
