@@ -1,7 +1,16 @@
 # Kassa — Agaemi üçün qısa izah
 
-Sənin üçün telefonda **"Kassa"** adlı bir tətbiq hazırlayırıq. Məqsəd sadədir:
+Sənin üçün telefonda **"Kassa"** adlı bir tətbiq hazırlamışıq. Məqsəd sadədir:
 pulun **hardan gəlir, hara gedir, nə qədər qalıb** — hər zaman bir baxışda görəsən.
+
+## Necə quraşdırılır (1 dəqiqə)
+
+1. Telefonda **Chrome**-da bu linki aç: **https://agropmtore-commits.github.io/agaemi-kassa/**
+2. Yuxarı sağda **⋮** menyusu → **"Ana ekrana əlavə et"** (və ya "Tətbiqi quraşdır") → **Quraşdır**
+3. Ana ekranda yaşıl **Kassa** ikonu çıxır — bundan sonra oradan aç (brauzerdən yox)
+4. İlk açılışda cüzdanlarındakı pulu yazırsan (nağd və kart) — vəssalam
+
+İkonu **basılı saxlasan** birbaşa "− Məxaric" / "+ Mədaxil" açılır — ən sürətli yol.
 
 - Telefonun ana ekranında ikon olacaq, adi tətbiq kimi açılacaq
 - İnternet lazım deyil

@@ -1,4 +1,4 @@
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // GitHub Pages: https://<user>.github.io/agaemi-kassa/
 const BASE = process.env.VITE_BASE ?? '/agaemi-kassa/';
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string };
 
 // GitHub Pages SPA fallback: unknown deep links (e.g. /agaemi-kassa/add) are served
 // from 404.html — which is just a copy of index.html, so the router takes over.
@@ -23,6 +24,9 @@ function spaFallback404(): Plugin {
 
 export default defineConfig({
   base: BASE,
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     tailwindcss(),

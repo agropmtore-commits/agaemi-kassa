@@ -1,8 +1,14 @@
+import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ComingSoon, PageTitle } from '../../components/AppShell';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { PageTitle } from '../../components/AppShell';
+import { Banner } from '../../components/pickers';
+import { db } from '../../db/schema';
+import { backupReminderDue, budgetProgress } from '../../domain/budget';
+import { LEVEL_BAR, LEVEL_TEXT } from '../budgets/levels';
 import { Card, SectionTitle } from '../../components/ui';
 import { TxRow } from '../../components/TxRow';
-import { useBalances, useCategoryMap, useMonthTransactions, useRecentTransactions, useWalletMap } from '../../hooks/useData';
+import { useBalances, useCategoryMap, useMonthTransactions, useRecentTransactions, useSettings, useWalletMap } from '../../hooks/useData';
 import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
 import { delta, monthSummary } from '../../domain/stats';
@@ -18,6 +24,23 @@ export function DashboardPage() {
   const recent = useRecentTransactions(5);
   const categories = useCategoryMap();
   const wallets = useWalletMap();
+  const budgets = useLiveQuery(() => db.budgets.toArray(), []);
+  const settings = useSettings();
+  const txCount = useLiveQuery(() => db.transactions.count(), []);
+
+  const progress = useMemo(() => (budgets && monthTxs ? budgetProgress(budgets, monthTxs) : []), [budgets, monthTxs]);
+  const nameOf = (categoryId?: string) => (categoryId ? (categories?.get(categoryId)?.name ?? '?') : t.budgets.overall);
+  const over = progress.filter((p) => p.level === 'over');
+  const warn = progress.filter((p) => p.level === 'warn');
+  const backupDue =
+    settings && txCount !== undefined
+      ? backupReminderDue({
+          lastBackupAt: settings.last_backup_at,
+          installedAt: settings.installed_at,
+          reminderDays: settings.backup_reminder_days,
+          transactionCount: txCount,
+        })
+      : false;
 
   const summary = monthTxs ? monthSummary(monthTxs, month) : undefined;
   const prev = prevTxs ? monthSummary(prevTxs, shiftMonth(month, -1)) : undefined;
@@ -27,6 +50,14 @@ export function DashboardPage() {
   return (
     <>
       <PageTitle>{t.dashboard.title}</PageTitle>
+
+      {over.length > 0 && <Banner kind="danger">{t.budgets.exceededBanner(over.map((p) => nameOf(p.category_id)).join(', '))}</Banner>}
+      {warn.length > 0 && <Banner kind="warn">{t.budgets.warnBanner(warn.map((p) => nameOf(p.category_id)).join(', '))}</Banner>}
+      {backupDue && (
+        <Banner kind="info" action={{ label: t.backup.reminderAction, onClick: () => navigate('/more/backup') }}>
+          {settings?.last_backup_at ? t.backup.reminder(t.backup.daysAgo(daysSince(settings.last_backup_at))) : t.backup.reminderNever}
+        </Banner>
+      )}
 
       {/* Ümumi qalıq */}
       <section className="rounded-2xl bg-brand-600 p-5 text-white shadow-sm">
@@ -89,10 +120,42 @@ export function DashboardPage() {
         )}
       </section>
 
-      {/* Büdcə — Mərhələ 4 */}
+      {/* Büdcə */}
       <section className="mt-4">
-        <SectionTitle>{t.dashboard.budgets}</SectionTitle>
-        <ComingSoon phase={4} />
+        <SectionTitle
+          right={
+            <Link to="/more/budgets" className="text-sm font-medium text-brand-600">
+              {progress.length > 0 ? t.dashboard.seeAll : t.budgets.setLimit} →
+            </Link>
+          }
+        >
+          {t.dashboard.budgets}
+        </SectionTitle>
+        {progress.length > 0 ? (
+          <Card className="divide-y divide-(--app-border) overflow-hidden">
+            {progress.slice(0, 5).map((p) => {
+              const cat = p.category_id ? categories?.get(p.category_id) : undefined;
+              const pct = Math.round(p.ratio * 100);
+              return (
+                <Link key={p.budget.id} to="/more/budgets" className="block px-4 py-2.5">
+                  <span className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="truncate font-medium">
+                      {cat ? `${cat.icon} ${cat.name}` : `Σ ${t.budgets.overall}`}
+                    </span>
+                    <span className={`tabular shrink-0 ${LEVEL_TEXT[p.level]}`}>
+                      {formatMoney(p.spent, { symbol: false })} / {formatMoney(p.limit)} · {pct} %
+                    </span>
+                  </span>
+                  <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-(--app-border)">
+                    <span className={`block h-full rounded-full ${LEVEL_BAR[p.level]}`} style={{ width: `${Math.min(100, Math.max(pct, 1))}%` }} />
+                  </span>
+                </Link>
+              );
+            })}
+          </Card>
+        ) : (
+          <p className="rounded-xl border border-dashed border-(--app-border) p-4 text-center text-sm text-(--app-muted)">{t.budgets.emptyHint}</p>
+        )}
       </section>
 
       {/* Son əməliyyatlar */}
@@ -122,4 +185,8 @@ export function DashboardPage() {
       </section>
     </>
   );
+}
+
+function daysSince(iso: string): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
 }

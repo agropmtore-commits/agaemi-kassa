@@ -4,7 +4,7 @@ Agaemi üçün şəxsi (ev) büdcə və kassa sistemi. Məqsəd — əlinə gəl
 **mədaxil**, xərclədiyi hər pulu **məxaric** kimi qeyd etmək və istənilən anda
 pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını** görmək.
 
-> **Status:** Mərhələ 3 tamamlandı — canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Mərhələ 4 (büdcə, ayarlar, backup).
+> **Status:** **MVP hazırdır (v1.0.0)** — Mərhələ 1–4 tamamlandı. Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaemi istifadəyə başlayır; Mərhələ 5 (şablonlar, PIN).
 > Agaemi üçün sadə dildə xülasə: [AGAEMI_UCUN.md](AGAEMI_UCUN.md)
 
 ---
@@ -40,6 +40,8 @@ pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını
 | 25 | Əlavə etmə axını | **Məbləğ → "Növbəti" → kateqoriyaya toxun = yadda saxlanır**; 5 saniyə "Geri al" | Ən az toxunuş; cüzdan (sonuncu) və tarix (bu gün) avtomatik |
 | 26 | Mənfi qalıq | **Cüzdan qalığı mənfi ola bilməz** — məxaric/köçürmə mövcud məbləğdən çox ola bilməz; forma "Mövcud · X ₼" göstərir və bloklayır. Mədaxil düzəlişi/silinməsi bloklanmır | Kartda 1 000 varsa 1 000-dən çox nağda keçməsin; səhv gəliri düzəltmək mümkün qalsın |
 | 27 | Diaqram rəngləri | **Mədaxil yaşılı #059669, məxaric qırmızısı #dc2626** (CVD yoxlamasından keçir, ΔE 8,6); kateqoriya rəngləri dataviz istinad palitrasından; dairəvi diaqramda ≤ 6 dilim (qalanı "Qalan"), hər diaqramın cədvəl əkizi var | Rəng korluğunda da oxunsun; 13 kateqoriya eyni anda diaqrama sığmır |
+| 28 | Arxiv qaydaları | **Cüzdan:** qalığı 0 deyilsə və ya sonuncu aktivdirsə arxivlənmir; **kateqoriya:** həmişə arxivlənir (köhnə əməliyyatlar qalır), sistem kateqoriyası yox | Pul "itməsin", tarixçə pozulmasın |
+| 29 | Backup məzmunu | PIN və bərpa sözü **backup-a düşmür**; idxalda cihazın teması qorunur | Fayl Telegram/Drive-da gəzir |
 
 ## 1. Problem / Məqsəd
 
@@ -347,9 +349,9 @@ Settings
 - [x] **Mərhələ 1 — Skelet** — 18 sentyabr 2026: Vite + React + TS + Tailwind + PWA; Dexie sxemi; default cüzdanlar/kateqoriyalar; 4 tab; GitHub Pages — ilk link
 - [x] **Mərhələ 2 — Əməliyyatlar** — 18 sentyabr 2026: onboarding (başlanğıc balans); mədaxil / məxaric / köçürmə formu; siyahı, filtr, axtarış, redaktə, silmə; cüzdan qalıqları
 - [x] **Mərhələ 3 — Panel və statistika** — 18 sentyabr 2026: ana panel; diaqramlar, dövr seçimi, müqayisə
-- [ ] **Mərhələ 4 — Büdcə, ayarlar, backup** ← *növbəti*: limitlər və xəbərdarlıq; cüzdan/kateqoriya idarəetməsi; JSON ixrac/idxal + xatırlatma
-- [ ] ✅ **MVP hazır — Agaemi istifadəyə başlayır**, real rəy toplanır
-- [ ] **Mərhələ 5 — Rahatlıq**: şablonlar, qaranlıq rejim, PIN
+- [x] **Mərhələ 4 — Büdcə, ayarlar, backup** — 18 sentyabr 2026: limitlər və xəbərdarlıq; cüzdan/kateqoriya idarəetməsi; JSON ixrac/idxal + xatırlatma
+- [x] ✅ **MVP hazır (v1.0.0, 18 sentyabr 2026)** — Agaemi istifadəyə başlayır, real rəy toplanır
+- [ ] **Mərhələ 5 — Rahatlıq** ← *növbəti*: şablonlar, PIN (qaranlıq rejim artıq var — Ayarlar → Tema)
 - [ ] **Mərhələ 6 — Borc izləmə**
 - [ ] **Mərhələ 7 — Yığım hədəfi**
 - [ ] **Mərhələ 8 — Qəbz şəkli, tam backup (ZIP), Excel/CSV ixrac**
@@ -445,6 +447,7 @@ npm run icons      # public/icons/*.png-ni SVG-dən yenidən yarat (sharp)
 **Plan v1 — tamamlandı (18 sentyabr 2026).** 23 qərar verildi (bölmə 0). Açıq sual qalmayıb.
 
 - [ ] `AGAEMI_UCUN.md` Agaemiyə göstərilir, rəyi alınır (xüsusən kateqoriya siyahısı və şablon nümunələri)
+- [x] Mərhələ 4 — büdcə, ayarlar, backup (18 sentyabr 2026): kateqoriya/ümumi aylıq limitlər (panel: yaşıl/sarı/qırmızı + banner), cüzdan və kateqoriya idarəetməsi (ad, ikon, rəng, arxiv qaydaları), JSON ixrac (paylaş/yüklə) və idxal (əvəz et/birləşdir), backup xatırlatması, tema, sıfırlama
 - [x] Mərhələ 3 — statistika (18 sentyabr 2026): dövr (ay / il / aralıq), KPI + əvvəlki dövrlə müqayisə, kateqoriya/mənbə payı (halqa + sıralı cədvəl), kateqoriya trendi, son 12 ay, cüzdan üzrə xərc, orta gündəlik; paneldə keçən ayla müqayisə
 - [x] Mərhələ 2 — əməliyyatlar (18 sentyabr 2026): onboarding, mədaxil/məxaric/köçürmə formu (2 addım), siyahı + filtr + axtarış, redaktə/silmə + "Geri al", real qalıqlar, paneldə "bu ay"
 - [x] Mərhələ 1 — skelet canlıdır (18 sentyabr 2026)

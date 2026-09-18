@@ -8,6 +8,11 @@ import { TransactionFormPage } from './features/transactions/TransactionFormPage
 // Statistika (Recharts) ayrıca yüklənir — ilk açılış yüngül qalsın; service worker onu da önbelləyir
 const StatsPage = lazy(() => import('./features/stats/StatsPage').then((m) => ({ default: m.StatsPage })));
 import { MorePage } from './features/more/MorePage';
+import { BudgetsPage } from './features/budgets/BudgetsPage';
+import { WalletsPage } from './features/wallets/WalletsPage';
+import { CategoriesPage } from './features/categories/CategoriesPage';
+import { BackupPage } from './features/settings/BackupPage';
+import { SettingsPage } from './features/settings/SettingsPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import { useSetting } from './hooks/useData';
 import { useTheme } from './hooks/useTheme';
@@ -43,6 +48,11 @@ export function App() {
                 }
               />
               <Route path="more" element={<MorePage />} />
+              <Route path="more/budgets" element={<BudgetsPage />} />
+              <Route path="more/wallets" element={<WalletsPage />} />
+              <Route path="more/categories" element={<CategoriesPage />} />
+              <Route path="more/backup" element={<BackupPage />} />
+              <Route path="more/settings" element={<SettingsPage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
             <Route path="add" element={<TransactionFormPage />} />

@@ -1,35 +1,53 @@
+import { Link } from 'react-router';
+import { ChevronRight } from 'lucide-react';
 import { PageTitle } from '../../components/AppShell';
+import { Card } from '../../components/ui';
 import { t } from '../../i18n/az';
 
 interface Item {
   label: string;
-  phase: number;
+  icon: string;
+  to?: string;
+  phase?: number;
 }
 
-// README §9 — "Daha çox" menyusu. Hər bənd öz mərhələsində aktivləşir.
+// README §9 — "Daha çox" menyusu. Hazır olmayan bənd öz mərhələsini göstərir.
 const ITEMS: Item[] = [
-  { label: t.more.wallets, phase: 4 },
-  { label: t.more.categories, phase: 4 },
-  { label: t.more.budgets, phase: 4 },
-  { label: t.more.backup, phase: 4 },
-  { label: t.more.templates, phase: 5 },
-  { label: t.more.debts, phase: 6 },
-  { label: t.more.goals, phase: 7 },
-  { label: t.more.settings, phase: 4 },
+  { label: t.more.budgets, icon: '🎯', to: '/more/budgets' },
+  { label: t.more.wallets, icon: '👛', to: '/more/wallets' },
+  { label: t.more.categories, icon: '🏷️', to: '/more/categories' },
+  { label: t.more.backup, icon: '💾', to: '/more/backup' },
+  { label: t.more.templates, icon: '⚡', phase: 5 },
+  { label: t.more.debts, icon: '🤝', phase: 6 },
+  { label: t.more.goals, icon: '🐖', phase: 7 },
+  { label: t.more.settings, icon: '⚙️', to: '/more/settings' },
 ];
 
 export function MorePage() {
   return (
     <>
       <PageTitle>{t.more.title}</PageTitle>
-      <ul className="divide-y divide-(--app-border) overflow-hidden rounded-2xl bg-(--app-surface)">
-        {ITEMS.map((item) => (
-          <li key={item.label} className="flex items-center justify-between px-4 py-3">
-            <span className="font-medium">{item.label}</span>
-            <span className="text-xs text-(--app-muted)">{t.common.comingSoon(item.phase)}</span>
-          </li>
-        ))}
-      </ul>
+      <Card className="divide-y divide-(--app-border) overflow-hidden">
+        {ITEMS.map((item) =>
+          item.to ? (
+            <Link key={item.label} to={item.to} className="flex items-center gap-3 px-4 py-3 active:bg-(--app-border)">
+              <span className="w-7 text-center text-xl" aria-hidden>
+                {item.icon}
+              </span>
+              <span className="flex-1 font-medium">{item.label}</span>
+              <ChevronRight size={18} className="text-(--app-muted)" aria-hidden />
+            </Link>
+          ) : (
+            <div key={item.label} className="flex items-center gap-3 px-4 py-3 opacity-60">
+              <span className="w-7 text-center text-xl" aria-hidden>
+                {item.icon}
+              </span>
+              <span className="flex-1 font-medium">{item.label}</span>
+              <span className="text-xs text-(--app-muted)">{t.common.comingSoon(item.phase!)}</span>
+            </div>
+          ),
+        )}
+      </Card>
     </>
   );
 }
