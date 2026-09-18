@@ -13,11 +13,13 @@
   --color-brand-700: #15803d;
 
   /* Semantic colours per transaction kind (README §12.1) */
-  --color-income: #16a34a;
+  /* dataviz: yaşıl/qırmızı cütü CVD yoxlamasından keçir (#059669 ↔ #dc2626, ΔE 8.6) */
+  --color-income: #059669;
   --color-expense: #dc2626;
   --color-transfer: #64748b;
   --color-debt: #f97316;
   --color-savings: #7c3aed;
+  --color-other: #6b7280;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Roboto Mono", Menlo, monospace;

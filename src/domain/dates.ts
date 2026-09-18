@@ -81,3 +81,22 @@ export function shortDate(date: string, today = todayLocal()): string {
   const base = `${d} ${MONTHS_SHORT_AZ[m - 1]}`;
   return y === Number(today.slice(0, 4)) ? base : `${base} ${y}`;
 }
+
+/** 2026 → { start: '2026-01-01', end: '2026-12-31' } */
+export function yearBounds(year: number): { start: string; end: string } {
+  return { start: `${year}-01-01`, end: `${year}-12-31` };
+}
+
+/** Hər iki uc daxil olmaqla gün sayı: ('2026-09-01','2026-09-18') → 18 */
+export function daysInRange(start: string, end: string): number {
+  const [y1, m1, d1] = start.split('-').map(Number) as [number, number, number];
+  const [y2, m2, d2] = end.split('-').map(Number) as [number, number, number];
+  const a = Date.UTC(y1, m1 - 1, d1);
+  const b = Date.UTC(y2, m2 - 1, d2);
+  return Math.max(0, Math.round((b - a) / 86_400_000) + 1);
+}
+
+/** endKey daxil olmaqla geriyə n ay: ('2026-09', 3) → ['2026-07','2026-08','2026-09'] */
+export function monthKeysBack(endKey: string, n: number): string[] {
+  return Array.from({ length: n }, (_, i) => shiftMonth(endKey, i - (n - 1)));
+}

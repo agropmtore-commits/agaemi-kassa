@@ -160,7 +160,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
     return (
       <div className="mx-auto min-h-full max-w-md px-4 pb-6">
         <TopBar title={title} onBack={() => navigate(-1)} />
-        <p className={`tabular mb-1 text-3xl font-bold ${style.text}`}>{formatMoney(amount.qepik)}</p>
+        <p className={`mb-1 text-3xl font-bold ${style.text}`}>{formatMoney(amount.qepik)}</p>
         <p className="mb-4 text-sm text-(--app-muted)">
           {wallets?.find((w) => w.id === walletId)?.name} · {dayLabel(date)}
           {note ? ` · ${note}` : ''}
@@ -221,7 +221,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
       />
 
       <div className="my-4 text-center">
-        <p className={`tabular text-5xl font-bold ${style.text}`} aria-live="polite">
+        <p className={`text-5xl font-bold ${style.text}`} aria-live="polite">
           {displayRaw(amount.raw)}
           <span className="ml-1 text-2xl opacity-70">₼</span>
         </p>

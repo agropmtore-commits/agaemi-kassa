@@ -3,9 +3,9 @@ import { ComingSoon, PageTitle } from '../../components/AppShell';
 import { Card, SectionTitle } from '../../components/ui';
 import { TxRow } from '../../components/TxRow';
 import { useBalances, useCategoryMap, useMonthTransactions, useRecentTransactions, useWalletMap } from '../../hooks/useData';
-import { currentMonthKey } from '../../domain/dates';
+import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
-import { monthSummary } from '../../domain/stats';
+import { delta, monthSummary } from '../../domain/stats';
 import { t } from '../../i18n/az';
 
 /** README §4.3 — Panel: qalıqlar, bu ay, büdcə (Mərhələ 4), son əməliyyatlar, 3 böyük düymə. */
@@ -14,11 +14,14 @@ export function DashboardPage() {
   const balances = useBalances();
   const month = currentMonthKey();
   const monthTxs = useMonthTransactions(month);
+  const prevTxs = useMonthTransactions(shiftMonth(month, -1));
   const recent = useRecentTransactions(5);
   const categories = useCategoryMap();
   const wallets = useWalletMap();
 
   const summary = monthTxs ? monthSummary(monthTxs, month) : undefined;
+  const prev = prevTxs ? monthSummary(prevTxs, shiftMonth(month, -1)) : undefined;
+  const expenseDelta = summary && prev ? delta(summary.expense, prev.expense) : undefined;
   const { int, frac, negative } = splitMoney(balances?.total ?? 0);
 
   return (
@@ -28,7 +31,7 @@ export function DashboardPage() {
       {/* Ümumi qalıq */}
       <section className="rounded-2xl bg-brand-600 p-5 text-white shadow-sm">
         <p className="text-sm/5 opacity-80">{t.common.total}</p>
-        <p className="tabular mt-1 text-4xl font-bold">
+        <p className="mt-1 text-4xl font-bold">
           {negative && '−'}
           {int}
           <span className="text-2xl opacity-80">,{frac} ₼</span>
@@ -79,6 +82,11 @@ export function DashboardPage() {
             </p>
           </div>
         </Card>
+        {expenseDelta && expenseDelta.pct !== null && (
+          <p className="tabular mt-1 px-1 text-xs text-(--app-muted)">
+            {t.common.expense}: {expenseDelta.pct > 0 ? '+' : ''}{expenseDelta.pct} % {t.stats.vsPrevMonth} ({formatMoney(prev!.expense)})
+          </p>
+        )}
       </section>
 
       {/* Büdcə — Mərhələ 4 */}

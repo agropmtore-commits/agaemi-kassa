@@ -61,6 +61,14 @@ export function useMonthTransactions(monthKey: string): Transaction[] | undefine
   }, [monthKey]);
 }
 
+/** İstənilən tarix aralığının əməliyyatları (hər iki uc daxil). */
+export function useRangeTransactions(start: string, end: string): Transaction[] | undefined {
+  return useLiveQuery(
+    async (): Promise<Transaction[]> => (start <= end ? db.transactions.where('date').between(start, end, true, true).toArray() : []),
+    [start, end],
+  );
+}
+
 export function useRecentTransactions(limit: number): Transaction[] | undefined {
   return useLiveQuery(() => db.transactions.orderBy('[date+created_at]').reverse().limit(limit).toArray(), [limit]);
 }

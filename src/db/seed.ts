@@ -3,30 +3,32 @@ import { t } from '../i18n/az';
 
 // README §3.3 — default kateqoriya / mənbə siyahısı. Agaeminin rəyi ilə dəyişə bilər.
 // İkonlar emoji — Android-də Noto ilə göstərilir, ayrıca ikon kitabxanası lazım deyil.
+// Rənglər: dataviz istinad palitrasının 8 slotu (bitişik cütlər CVD yoxlamasından keçir) + 4 əlavə ton.
+// Diaqramda eyni anda ≤ 6 dilim göstərilir; kimlik həmişə ikon + ad ilə də verilir.
 
 type SeedCat = Pick<Category, 'name' | 'icon' | 'color'>;
 
 export const DEFAULT_EXPENSE_CATEGORIES: SeedCat[] = [
-  { name: 'Ərzaq', icon: '🛒', color: '#16a34a' },
-  { name: 'Kommunal', icon: '💡', color: '#d97706' },
-  { name: 'Nəqliyyat', icon: '🚌', color: '#2563eb' },
-  { name: 'Ev', icon: '🏠', color: '#b45309' },
-  { name: 'Geyim', icon: '👕', color: '#db2777' },
-  { name: 'Səhiyyə', icon: '💊', color: '#dc2626' },
-  { name: 'Təhsil', icon: '📚', color: '#4f46e5' },
-  { name: 'Əyləncə / Kafe', icon: '☕', color: '#9333ea' },
+  { name: 'Ərzaq', icon: '🛒', color: '#2a78d6' },
+  { name: 'Kommunal', icon: '💡', color: '#eda100' },
+  { name: 'Nəqliyyat', icon: '🚌', color: '#1baf7a' },
+  { name: 'Ev', icon: '🏠', color: '#eb6834' },
+  { name: 'Geyim', icon: '👕', color: '#e87ba4' },
+  { name: 'Səhiyyə', icon: '💊', color: '#e34948' },
+  { name: 'Təhsil', icon: '📚', color: '#4a3aa7' },
+  { name: 'Əyləncə / Kafe', icon: '☕', color: '#008300' },
   { name: 'Telefon / Rabitə', icon: '📱', color: '#0891b2' },
-  { name: 'Uşaq / Ailə', icon: '🧸', color: '#e11d48' },
-  { name: 'Kredit ödənişi', icon: '🏦', color: '#475569' },
-  { name: 'Hədiyyə / Yardım', icon: '🎁', color: '#c026d3' },
+  { name: 'Uşaq / Ailə', icon: '🧸', color: '#c026d3' },
+  { name: 'Kredit ödənişi', icon: '🏦', color: '#0f766e' },
+  { name: 'Hədiyyə / Yardım', icon: '🎁', color: '#b45309' },
   { name: 'Digər', icon: '📦', color: '#6b7280' },
 ];
 
 export const DEFAULT_INCOME_CATEGORIES: SeedCat[] = [
-  { name: 'Maaş', icon: '💼', color: '#16a34a' },
-  { name: 'Əlavə iş', icon: '🛠️', color: '#0d9488' },
-  { name: 'Hədiyyə', icon: '🎁', color: '#c026d3' },
-  { name: 'Satış', icon: '🏷️', color: '#2563eb' },
+  { name: 'Maaş', icon: '💼', color: '#2a78d6' },
+  { name: 'Əlavə iş', icon: '🛠️', color: '#eb6834' },
+  { name: 'Hədiyyə', icon: '🎁', color: '#e87ba4' },
+  { name: 'Satış', icon: '🏷️', color: '#1baf7a' },
   { name: 'Digər', icon: '💰', color: '#6b7280' },
 ];
 
