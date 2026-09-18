@@ -47,13 +47,15 @@ export async function updateWallet(
     const [wallets, txs] = await Promise.all([database.wallets.toArray(), database.transactions.toArray()]);
     const w = wallets.find((x) => x.id === id);
     if (!w) throw new Error('Cüzdan tapılmadı');
+    // Arxivdəki cüzdanın qalığı 0 qalmalıdır (qərar #28) — əvvəl arxivdən çıxar
+    if (w.is_archived && patch.initial_balance !== w.initial_balance) throw new WalletError('archived');
     const current = walletBalances(wallets, txs).get(id) ?? 0;
     if (current - w.initial_balance + patch.initial_balance < 0) throw new WalletError('negative');
   }
   await database.wallets.update(id, { ...patch, ...(patch.name !== undefined ? { name: patch.name.trim() } : {}) });
 }
 
-export type WalletErrorCode = 'negative' | 'last_active' | 'has_balance';
+export type WalletErrorCode = 'negative' | 'last_active' | 'has_balance' | 'archived';
 
 export class WalletError extends Error {
   constructor(public readonly code: WalletErrorCode) {

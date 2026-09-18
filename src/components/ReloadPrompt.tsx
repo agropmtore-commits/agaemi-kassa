@@ -2,6 +2,8 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { RefreshCw } from 'lucide-react';
 import { t } from '../i18n/az';
 
+let updateTimer: ReturnType<typeof setInterval> | undefined;
+
 /** README §12 — "Yeni versiya hazırdır — Yenilə". Məlumat toxunulmur, yalnız kod yenilənir. */
 export function ReloadPrompt() {
   const {
@@ -9,8 +11,11 @@ export function ReloadPrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_url, registration) {
-      // Tətbiq uzun müddət açıq qalsa da saatda bir yeni versiya yoxla
-      if (registration) setInterval(() => registration.update(), 60 * 60 * 1000);
+      // Tətbiq uzun müddət açıq qalsa da saatda bir yeni versiya yoxla. Komponent App-da bir dəfə qurulur;
+      // yenidən qurulsa köhnə taymer təmizlənir
+      if (!registration) return;
+      if (updateTimer) clearInterval(updateTimer);
+      updateTimer = setInterval(() => void registration.update(), 60 * 60 * 1000);
     },
   });
 

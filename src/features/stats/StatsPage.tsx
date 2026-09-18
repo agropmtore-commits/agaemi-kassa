@@ -11,6 +11,8 @@ import { formatMoney } from '../../domain/money';
 import {
   averageDaily, byCategory, byWallet, categorySeries, delta, foldTail, monthlySeries, summarize, type Delta,
 } from '../../domain/stats';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/schema';
 import { t } from '../../i18n/az';
 
 type Mode = 'month' | 'year' | 'range';
@@ -46,6 +48,8 @@ export function StatsPage() {
   const seriesTxs = useRangeTransactions(seriesStart, monthBounds(seriesEnd).end);
   const categories = useCategoryMap();
   const wallets = useWalletMap();
+  const latestDate = useLiveQuery(async () => (await db.transactions.orderBy('date').last())?.date, []);
+  const maxMonth = latestDate && monthKey(latestDate) > currentMonthKey() ? monthKey(latestDate) : currentMonthKey();
 
   const summary = useMemo(() => (txs ? summarize(txs) : undefined), [txs]);
   const prevSummary = useMemo(() => (prevTxs && period.prev ? summarize(prevTxs) : undefined), [prevTxs, period.prev]);
@@ -94,7 +98,7 @@ export function StatsPage() {
             label={monthLabel(month)}
             onPrev={() => setMonth((m) => shiftMonth(m, -1))}
             onNext={() => setMonth((m) => shiftMonth(m, 1))}
-            nextDisabled={month >= currentMonthKey()}
+            nextDisabled={month >= maxMonth}
           />
         )}
         {mode === 'year' && (

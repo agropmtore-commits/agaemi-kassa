@@ -11,7 +11,7 @@ import { db, type Theme } from '../../db/schema';
 import { setSetting } from '../../db/settings';
 import { useSettings } from '../../hooks/useData';
 import { useTheme } from '../../hooks/useTheme';
-import { shortDate } from '../../domain/dates';
+import { shortDate, todayLocal } from '../../domain/dates';
 import { t } from '../../i18n/az';
 
 const REMINDER_OPTIONS = [0, 7, 14, 30] as const;
@@ -27,6 +27,7 @@ export function SettingsPage() {
   const txCount = useLiveQuery(() => db.transactions.count(), []);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetWord, setResetWord] = useState('');
+  const [resetError, setResetError] = useState('');
   const [pinFlow, setPinFlow] = useState<PinFlow | null>(null);
   const [pinError, setPinError] = useState<string | undefined>();
   const hasPin = Boolean(settings?.pin_hash);
@@ -124,7 +125,7 @@ export function SettingsPage() {
       <SectionTitle>{t.settings.data}</SectionTitle>
       <Card className="p-3">
         <p className="text-sm">
-          {t.settings.dataStats(txCount ?? 0, settings?.installed_at ? shortDate(settings.installed_at.slice(0, 10)) : '—')}
+          {t.settings.dataStats(txCount ?? 0, settings?.installed_at ? shortDate(todayLocal(new Date(settings.installed_at))) : '—')}
         </p>
         <button type="button" onClick={() => setResetOpen(true)} className="mt-3 w-full rounded-xl border border-expense py-2.5 text-sm font-semibold text-expense">
           {t.settings.reset}
@@ -161,13 +162,19 @@ export function SettingsPage() {
         confirmLabel={t.settings.reset}
         danger
         onConfirm={async () => {
-          if (resetWord.trim().toLocaleUpperCase('az') !== t.settings.resetWord) return;
+          // Latın "SIL" (ingilis klaviaturası) da qəbul olunur
+          const word = resetWord.trim().toLocaleUpperCase('az').replace(/I/g, 'İ');
+          if (word !== t.settings.resetWord) {
+            setResetError(t.settings.resetMismatch);
+            return;
+          }
           await resetAll();
         }}
       >
         <label className="block text-sm">
           <span className="mb-1 block text-xs font-semibold text-(--app-muted)">{t.settings.resetConfirm}</span>
-          <input value={resetWord} onChange={(e) => setResetWord(e.target.value)} className={inputClass} autoCapitalize="characters" />
+          <input value={resetWord} onChange={(e) => { setResetWord(e.target.value); setResetError(''); }} className={inputClass} autoCapitalize="characters" />
+          {resetError && <span className="mt-1 block text-xs text-expense">{resetError}</span>}
         </label>
       </ConfirmSheet>
     </>

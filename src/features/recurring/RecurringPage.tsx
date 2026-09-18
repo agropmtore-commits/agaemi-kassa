@@ -47,7 +47,7 @@ export function RecurringPage() {
   }
   function openEdit(r: Recurring) {
     setError('');
-    setDraft({ id: r.id, name: r.name, type: r.type, amount: r.amount, category_id: r.category_id, wallet_id: r.wallet_id, period: r.period, day: r.day, start_date: r.next_date, note: r.note ?? '', is_active: Boolean(r.is_active) });
+    setDraft({ id: r.id, name: r.name, type: r.type, amount: r.amount, category_id: r.category_id, wallet_id: r.wallet_id, period: r.period, day: r.day, start_date: '', note: r.note ?? '', is_active: Boolean(r.is_active) }); // ilk tarix boş: gün dəyişsə bu gündən hesablanır
   }
 
   async function saveDraft() {

@@ -4,7 +4,7 @@ Agaemi üçün şəxsi (ev) büdcə və kassa sistemi. Məqsəd — əlinə gəl
 **mədaxil**, xərclədiyi hər pulu **məxaric** kimi qeyd etmək və istənilən anda
 pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını** görmək.
 
-> **Status:** **v1.5.0 — plan tam icra olunub (Mərhələ 1–8) + təkrarlanan əməliyyatlar**. Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaeminin real istifadəsi və rəyi. Qalan istəyə bağlı bəndlər (APK, Drive backup) sənin tərəfdən hesab/alət qurulmasını tələb edir.
+> **Status:** **v1.5.1 — plan tam icra olunub (Mərhələ 1–8) + təkrarlanan əməliyyatlar + kod icmalı düzəlişləri**. Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaeminin real istifadəsi və rəyi. Qalan istəyə bağlı bəndlər (APK, Drive backup) sənin tərəfdən hesab/alət qurulmasını tələb edir.
 > Agaemi üçün sadə dildə xülasə: [AGAEMI_UCUN.md](AGAEMI_UCUN.md)
 
 ---
@@ -51,6 +51,10 @@ pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını
 | 36 | CSV formatı | UTF-8 BOM, `;` ayırıcı, ondalık vergül (`-45,50`), tarix ISO | az-AZ/ru-RU Excel birbaşa cədvəl kimi açır |
 | 37 | SheetJS mənbəyi | npm-dəki köhnə `xlsx` yox, **SheetJS CDN tarball 0.20.3** (package.json-da URL); yalnız ixrac zamanı lazy yüklənir | Təhlükəsizlik yamaqları; ilk açılış yüngül qalsın |
 | 38 | Təkrarlanan əməliyyat | **Avtomatik yazılmır** — vaxtı çatanda paneldə xatırlatma, "Yaz" bir toxunuşla (#26 yoxlanır), "Keç" ötürür; aylıq gün 1–28 (hər ayda var) | Cüzdanda pul olmaya bilər; yazılmamış "xəyali" xərc olmasın |
+| 39 | Arxiv cüzdan və köhnə sətirlər | Arxivdəki cüzdana toxunan sətirdə **məbləğ dəyişmir və sətir silinmir** (qeyd / tarix / kateqoriya dəyişə bilər); redaktədə cüzdan səssizcə dəyişmir — arxiv çipi göstərilir | Arxivin qalığı 0 qalsın, pul "gizli" yerə keçməsin |
+| 40 | Köçürmənin hədəfi | Köçürməni silmək / başqa yerə yönəltmək / azaltmaq hədəf cüzdanı (o cümlədən hədəfi) mənfiyə sala bilməz — #26-nın köçürmə tərəfi | Yığım hədəfi mənfi olmasın |
+| 41 | Paylaşma | Chromium `.json/.zip/.xlsx` faylını paylaşmır → JSON **.txt kimi** paylaşılır (idxal məzmuna baxır), ZIP/Excel uğursuz olsa **Yükləmələr**ə düşür və bildirilir; CSV paylaşılır | Android-də backup axını işləsin |
+| 42 | Kilid ekranı | Marşrut ağacının **üstündə** göstərilir (forma itmir); kilid yalnız real arxa plan hadisəsindən sonra qiymətləndirilir, ayarlarda vaxtı dəyişmək kilidləmir | Qəbz kamerası / zəng yarımçıq formanı silməsin |
 
 ## 1. Problem / Məqsəd
 
@@ -457,6 +461,7 @@ npm run icons      # public/icons/*.png-ni SVG-dən yenidən yarat (sharp)
 **Plan v1 — tamamlandı (18 sentyabr 2026).** 23 qərar verildi (bölmə 0). Açıq sual qalmayıb.
 
 - [ ] `AGAEMI_UCUN.md` Agaemiyə göstərilir, rəyi alınır (xüsusən kateqoriya siyahısı və şablon nümunələri)
+- [x] Kod icmalı (18 sentyabr 2026): 9 agentlik icmal, 15 təsdiqlənmiş tapıntı düzəldildi — arxiv cüzdan sızması, Android paylaşma, kilid vaxtı, yığım cüzdanı "sonuncu" olması, köçürmə hədəfi mənfi, sistem kateqoriyası adı, borc statusu, təkrarlanan tarix, büdcə/arxiv, idxal mənşəyi, JSON idxalında qəbzlər, köhnə Safari şəkil, SW taymer sızması + xırdalıqlar (qərar #39–42)
 - [x] Təkrarlanan əməliyyatlar (18 sentyabr 2026): Daha çox → Təkrarlanan; qayda = ad, növ, məbləğ, kateqoriya, cüzdan (və ya sonuncu), dövr (ay / həftə), gün, ilk tarix; paneldə "🔁 Kommunal · 45 ₼ · 18 sen [Yaz] [Keç]", gecikənlər növbə ilə; backup-a daxildir (köhnə fayllar da oxunur)
 - [x] Mərhələ 8 — qəbz şəkli + ZIP + Excel (18 sentyabr 2026): əməliyyata ≤ 5 şəkil (kamera/qalereya, 1 200 px JPEG-ə sıxılır, siyahıda 📎, tam ekran baxış, yetimlər açılışda təmizlənir); tam backup ZIP (JSON + şəkillər) — idxal .json və .zip-i imza ilə tanıyır; Excel (3 vərəq) / CSV (BOM, `;`) ixracı — ay / il / hamısı, paylaşma menyusu; `navigator.storage.persist()`
 - [x] Mərhələ 7 — yığım hədəfi (18 sentyabr 2026): Hədəflər səhifəsi (proqres, %, son tarix), detal (yığılıb / hədəf, ayda X lazımdır, Pul qoy / Geri götür = köçürmə, dəyiş, bağla), paneldə Hədəflər bölməsi və "Sərbəst · Yığım" sətri; yığım cüzdanları Cüzdanlar səhifəsində yox, Hədəflərdədir

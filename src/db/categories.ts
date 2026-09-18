@@ -1,4 +1,5 @@
 import { db, newId, type Category, type CategoryType, type KassaDB } from './schema';
+import { setBudget } from './budgets';
 
 export interface CategoryInput {
   type: CategoryType;
@@ -31,6 +32,10 @@ export async function updateCategory(
   database: KassaDB = db,
 ): Promise<void> {
   if (patch.name !== undefined && !patch.name.trim()) throw new Error('Kateqoriya adı boşdur');
+  const cat = await database.categories.get(id);
+  if (!cat) throw new Error('Kateqoriya tapılmadı');
+  // Sistem kateqoriyasının adı sabitdir; ikon / rəng dəyişə bilər
+  if (cat.is_system && patch.name !== undefined && patch.name.trim() !== cat.name) throw new Error('Sistem kateqoriyasının adı dəyişmir');
   await database.categories.update(id, { ...patch, ...(patch.name !== undefined ? { name: patch.name.trim() } : {}) });
 }
 
@@ -40,6 +45,8 @@ export async function setCategoryArchived(id: string, archived: boolean, databas
   if (!cat) throw new Error('Kateqoriya tapılmadı');
   if (cat.is_system && archived) throw new Error('Sistem kateqoriyası arxivlənmir');
   await database.categories.update(id, { is_archived: archived ? 1 : 0 });
+  // Arxivlənən kateqoriyanın limiti də gedir — yoxsa paneldə görünür, Büdcə səhifəsində tapılmır
+  if (archived) await setBudget(id, 0, database);
 }
 
 /** Kateqoriya üzrə əməliyyat sayı — arxivləmə dialoqunda göstərmək üçün. */

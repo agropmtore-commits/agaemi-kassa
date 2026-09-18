@@ -4,16 +4,20 @@ import { NumPad, displayRaw, useAmountInput } from './NumPad';
 import { PrimaryButton } from './ui';
 import { t } from '../i18n/az';
 
+let openSheets = 0;
+
 /** Aşağıdan açılan panel — Android-ə xas "bottom sheet". Arxa fona toxunanda / Esc ilə bağlanır. */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
+    openSheets += 1;
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      openSheets = Math.max(0, openSheets - 1);
+      if (openSheets === 0) document.body.style.overflow = ''; // iç-içə panel bağlananda arxa səhifə açılmasın
     };
   }, [open, onClose]);
 

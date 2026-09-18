@@ -91,12 +91,13 @@ export function Banner({
   );
 }
 
+/** Etiket + sahə. `div`-dir, `label` yox: içində çiplər/düymələr olanda etiketə toxunuş ilk düyməni basmasın. */
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block">
+    <div role="group" aria-label={label}>
       <span className="mb-1 block text-xs font-semibold text-(--app-muted)">{label}</span>
       {children}
-    </label>
+    </div>
   );
 }
 

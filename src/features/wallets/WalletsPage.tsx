@@ -72,7 +72,7 @@ export function WalletsPage() {
             <span className="block text-xs text-(--app-muted)">{t.wallets.types[w.type]}</span>
           </span>
         </button>
-        <button type="button" onClick={() => setBalanceEdit(w)} className="tabular shrink-0 text-right">
+        <button type="button" onClick={() => setBalanceEdit(w)} disabled={Boolean(w.is_archived)} className="tabular shrink-0 text-right disabled:opacity-60">
           <span className="block font-semibold">{formatMoney(balances?.byWallet.get(w.id) ?? 0)}</span>
           <span className="block text-[11px] text-(--app-muted)">
             {t.wallets.initialBalance}: {formatMoney(w.initial_balance, { symbol: false })}

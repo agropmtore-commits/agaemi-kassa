@@ -21,7 +21,14 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
   useEffect(() => {
     if (cooldownUntil <= Date.now()) return;
-    const id = setInterval(() => setNow(Date.now()), 500);
+    const id = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= cooldownUntil) {
+        clearInterval(id);
+        setError(undefined);
+      }
+    }, 500);
     return () => clearInterval(id);
   }, [cooldownUntil]);
 
@@ -73,7 +80,8 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
         <>
           <PinEntry
             title={t.pin.enter}
-            error={cooldown > 0 ? t.pin.cooldown(cooldown) : error}
+            error={error}
+            notice={cooldown > 0 ? t.pin.cooldown(cooldown) : undefined}
             disabled={busy || cooldown > 0}
             onComplete={(p) => void tryPin(p)}
           />

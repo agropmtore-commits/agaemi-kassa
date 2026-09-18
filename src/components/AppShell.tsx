@@ -1,7 +1,5 @@
 import { Outlet } from 'react-router';
 import { BottomNav } from './BottomNav';
-import { ReloadPrompt } from './ReloadPrompt';
-import { t } from '../i18n/az';
 
 /** Tab səhifələrinin ümumi çərçivəsi: məzmun + aşağı naviqasiya. */
 export function AppShell() {
@@ -12,7 +10,6 @@ export function AppShell() {
         <Outlet />
       </main>
       <BottomNav />
-      <ReloadPrompt />
     </div>
   );
 }
@@ -27,11 +24,3 @@ export function PageTitle({ children, right }: { children: React.ReactNode; righ
   );
 }
 
-/** Hələ hazır olmayan hissə üçün yer tutucu. */
-export function ComingSoon({ phase }: { phase: number }) {
-  return (
-    <p className="rounded-xl border border-dashed border-(--app-border) p-6 text-center text-sm text-(--app-muted)">
-      {t.common.comingSoon(phase)}
-    </p>
-  );
-}

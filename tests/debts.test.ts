@@ -164,3 +164,32 @@ describe('domain summary', () => {
     expect(order).toEqual(['Əli', 'Bank']);
   });
 });
+
+describe('icmal düzəlişləri (2026-09-18)', () => {
+  it('lowering the initial amount to the repaid sum closes the debt; note/due edits work even when the wallet is archived', async () => {
+    const d = await createDebt({ person: 'Əli', direction: 'lent', amount: 50000, date: '2026-09-10', wallet_id: cash }, db);
+    await addRepayment(d.id, { amount: 30000, date: '2026-09-15', wallet_id: card }, db);
+    await updateDebt(d.id, { initial_amount: 30000 }, db);
+    expect((await db.debts.get(d.id))!.status).toBe('closed');
+    await updateDebt(d.id, { initial_amount: 40000 }, db);
+    expect((await db.debts.get(d.id))!.status).toBe('open');
+
+    // nağd 50 000 − 40 000 = 10 000 → 0-a endir və arxivlə, sonra yalnız qeydi dəyiş
+    const e = await createDebt({ person: 'Vəli', direction: 'lent', amount: 10000, date: '2026-09-10', wallet_id: cash }, db);
+    await db.wallets.update(cash, { is_archived: 1 });
+    await updateDebt(e.id, { person: 'Vəli M.', due_date: '2026-12-01', initial_amount: 10000 }, db);
+    expect((await db.debts.get(e.id))!).toMatchObject({ person: 'Vəli M.', due_date: '2026-12-01' });
+    await expect(updateDebt(e.id, { initial_amount: 12000 }, db)).rejects.toMatchObject({ code: 'wallet' });
+  });
+
+  it('forgiveDebt finds the system category by type even after a rename attempt is refused', async () => {
+    const sys = (await db.categories.toArray()).find((c) => c.is_system && c.type === 'expense')!;
+    const { updateCategory } = await import('../src/db/categories');
+    await expect(updateCategory(sys.id, { name: 'İtirdim' }, db)).rejects.toThrow();
+    await updateCategory(sys.id, { icon: '💸' }, db);
+    const d = await createDebt({ person: 'Əli', direction: 'lent', amount: 1000, date: '2026-09-10', wallet_id: cash }, db);
+    await forgiveDebt(d.id, '2026-09-18', db);
+    const loss = (await db.transactions.toArray()).find((tx) => tx.type === 'expense')!;
+    expect(loss.category_id).toBe(sys.id);
+  });
+});

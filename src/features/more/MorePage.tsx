@@ -7,11 +7,10 @@ import { t } from '../../i18n/az';
 interface Item {
   label: string;
   icon: string;
-  to?: string;
-  phase?: number;
+  to: string;
 }
 
-// README §9 — "Daha çox" menyusu. Hazır olmayan bənd öz mərhələsini göstərir.
+// README §9 — "Daha çox" menyusu.
 const ITEMS: Item[] = [
   { label: t.more.budgets, icon: '🎯', to: '/more/budgets' },
   { label: t.more.wallets, icon: '👛', to: '/more/wallets' },
@@ -30,25 +29,15 @@ export function MorePage() {
     <>
       <PageTitle>{t.more.title}</PageTitle>
       <Card className="divide-y divide-(--app-border) overflow-hidden">
-        {ITEMS.map((item) =>
-          item.to ? (
-            <Link key={item.label} to={item.to} className="flex items-center gap-3 px-4 py-3 active:bg-(--app-border)">
-              <span className="w-7 text-center text-xl" aria-hidden>
-                {item.icon}
-              </span>
-              <span className="flex-1 font-medium">{item.label}</span>
-              <ChevronRight size={18} className="text-(--app-muted)" aria-hidden />
-            </Link>
-          ) : (
-            <div key={item.label} className="flex items-center gap-3 px-4 py-3 opacity-60">
-              <span className="w-7 text-center text-xl" aria-hidden>
-                {item.icon}
-              </span>
-              <span className="flex-1 font-medium">{item.label}</span>
-              <span className="text-xs text-(--app-muted)">{t.common.comingSoon(item.phase!)}</span>
-            </div>
-          ),
-        )}
+        {ITEMS.map((item) => (
+          <Link key={item.label} to={item.to} className="flex items-center gap-3 px-4 py-3 active:bg-(--app-border)">
+            <span className="w-7 text-center text-xl" aria-hidden>
+              {item.icon}
+            </span>
+            <span className="flex-1 font-medium">{item.label}</span>
+            <ChevronRight size={18} className="text-(--app-muted)" aria-hidden />
+          </Link>
+        ))}
       </Card>
     </>
   );

@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {toast && (
         <div
           role="status"
-          className="fixed inset-x-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-white shadow-lg dark:bg-slate-100 dark:text-slate-900"
+          className="fixed inset-x-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-[70] mx-auto flex max-w-md items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-white shadow-lg dark:bg-slate-100 dark:text-slate-900"
         >
           <span className="flex-1 text-sm">{toast.message}</span>
           {toast.action && (

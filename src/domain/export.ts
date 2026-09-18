@@ -15,6 +15,8 @@ const TYPE_LABEL: Record<Transaction['type'], string> = { income: 'Mədaxil', ex
 
 export type Row = (string | number)[];
 
+const FORMULA_START = /^[=+@-]/;
+
 export interface ExportContext {
   categories: Map<string, Category>;
   wallets: Map<string, Wallet>;
@@ -89,7 +91,8 @@ export function categoryRows(txs: Transaction[], categories: Map<string, Categor
  */
 export function toCsv(headers: readonly string[], rows: Row[]): string {
   const cell = (v: string | number): string => {
-    const s = typeof v === 'number' ? v.toFixed(2).replace('.', ',') : v;
+    // Mətn "=", "+", "-", "@" ilə başlayırsa Excel onu düstur kimi oxuyur — qoruyucu apostrof
+    const s = typeof v === 'number' ? v.toFixed(2).replace('.', ',') : FORMULA_START.test(v) ? `'${v}` : v;
     return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [headers.map(cell).join(';'), ...rows.map((r) => r.map(cell).join(';'))];

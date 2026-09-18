@@ -15,7 +15,7 @@ import { dueRecurring } from '../../domain/recurring';
 import { skipOccurrence, writeOccurrence } from '../../db/recurring';
 import { TxValidationError } from '../../db/transactions';
 import { useToast } from '../../components/Toast';
-import { shortDate, todayLocal } from '../../domain/dates';
+import { daysSince, shortDate, todayLocal } from '../../domain/dates';
 import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
 import { delta, monthSummary } from '../../domain/stats';
@@ -282,8 +282,4 @@ export function DashboardPage() {
       </section>
     </>
   );
-}
-
-function daysSince(iso: string): number {
-  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
 }

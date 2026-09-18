@@ -8,10 +8,10 @@ import {
   backupFileName, BackupError, createBackup, createFullBackup, fullBackupFileName, importFullBackup, readBackupFile, serializeBackup,
   type FullBackup, type ImportMode,
 } from '../../db/backup';
-import { canShareFiles, deliverFile } from '../../lib/share';
+import { asShareableText, canShareFiles, deliverFile } from '../../lib/share';
 import { setSetting } from '../../db/settings';
 import { useSetting } from '../../hooks/useData';
-import { shortDate, todayLocal } from '../../domain/dates';
+import { daysSince, shortDate, todayLocal } from '../../domain/dates';
 import { t } from '../../i18n/az';
 
 /** README §6 — JSON ixrac (paylaş / yüklə) və idxal (əvəz et / birləşdir). */
@@ -29,14 +29,17 @@ export function BackupPage() {
   async function exportBackup(method: 'share' | 'download', kind: 'json' | 'zip') {
     setBusy(true);
     try {
-      const file =
+      let file =
         kind === 'zip'
           ? new File([await createFullBackup()], fullBackupFileName(), { type: 'application/zip' })
           : new File([serializeBackup(await createBackup())], backupFileName(), { type: 'application/json' });
+      if (method === 'share' && kind === 'json') file = asShareableText(file);
       const result = await deliverFile(file, method);
       if (result === 'aborted') return; // istifadəçi imtina etdi — backup sayılmır
       await setSetting('last_backup_at', new Date().toISOString());
-      toast({ message: t.backup.exported });
+      toast({ message: result === 'downloaded_fallback' ? t.backup.sharedAsDownload : t.backup.exported, duration: result === 'downloaded_fallback' ? 7000 : undefined });
+    } catch (e) {
+      toast({ message: `${t.backup.exportFailed}: ${(e as Error).message}`, duration: 7000 });
     } finally {
       setBusy(false);
     }
@@ -64,6 +67,9 @@ export function BackupPage() {
       setPending(null);
       toast({ message: t.backup.imported(result.transactions) });
       navigate('/', { replace: true });
+    } catch (e) {
+      setConfirm(false);
+      setError(e instanceof BackupError ? t.backup.errors[e.code]! : `${t.backup.exportFailed}: ${(e as Error).message}`);
     } finally {
       setBusy(false);
     }
@@ -121,7 +127,7 @@ export function BackupPage() {
         <SectionTitle>{t.backup.import}</SectionTitle>
         <Card className="p-4">
           <p className="mb-3 text-xs text-(--app-muted)">{t.backup.importHintFull}</p>
-          <input ref={fileInput} type="file" accept="application/json,application/zip,.json,.zip" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
+          <input ref={fileInput} type="file" accept="application/json,application/zip,text/plain,.json,.zip,.txt" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
@@ -136,7 +142,7 @@ export function BackupPage() {
                 <span className="font-medium">{pending.name}</span>
                 <br />
                 <span className="text-(--app-muted)">
-                  {t.backup.preview(pending.full.backup.data.transactions.length, pending.full.backup.data.wallets.length, shortDate(pending.full.backup.exported_at.slice(0, 10)))}
+                  {t.backup.preview(pending.full.backup.data.transactions.length, pending.full.backup.data.wallets.length, shortDate(todayLocal(new Date(pending.full.backup.exported_at))))}
                   {pending.full.attachments.length > 0 ? ` · ${t.backup.previewFull(pending.full.attachments.length)}` : ''}
                 </span>
               </p>
@@ -160,11 +166,4 @@ export function BackupPage() {
       <ConfirmSheet open={confirm} onClose={() => setConfirm(false)} title={t.backup.modeReplace} text={t.backup.confirmReplace} confirmLabel={t.backup.modeReplace} danger onConfirm={runImport} />
     </>
   );
-}
-
-function daysSince(iso: string): number {
-  const d = new Date(iso);
-  const today = todayLocal();
-  const then = todayLocal(d);
-  return Math.round((Date.parse(today) - Date.parse(then)) / 86_400_000);
 }

@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
+import { ReloadPrompt } from './components/ReloadPrompt';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { TransactionFormPage } from './features/transactions/TransactionFormPage';
@@ -41,16 +43,26 @@ function Root() {
   const { pathname } = useLocation();
 
   if (onboarded === undefined || locked === undefined) return null; // ayarlar yüklənir
-  if (locked) return <LockScreen onUnlock={unlock} />;
   if (!onboarded && pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
   if (onboarded && pathname === '/onboarding') return <Navigate to="/" replace />;
-  return <Outlet />;
+  // Kilid ekranı ağacın ÜSTÜNDƏ göstərilir — yarımçıq forma (məbləğ, qeyd, şəkil) itmir
+  return (
+    <>
+      <div inert={locked || undefined} aria-hidden={locked || undefined}>
+        <Outlet />
+      </div>
+      {locked && <LockScreen onUnlock={unlock} />}
+    </>
+  );
 }
 
 export function App() {
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <ErrorBoundary>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ToastProvider>
+        {/* Bir dəfə qurulur — service worker qeydiyyatı və saatlıq yoxlama marşrutlarla yenidən yaranmasın */}
+        <ReloadPrompt />
         <Routes>
           <Route element={<Root />}>
             <Route path="onboarding" element={<OnboardingPage />} />
@@ -86,6 +98,7 @@ export function App() {
           </Route>
         </Routes>
       </ToastProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

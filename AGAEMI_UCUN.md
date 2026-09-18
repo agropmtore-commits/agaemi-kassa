@@ -56,17 +56,30 @@ həmin faylı geri yükləyirsən — hər şey yerində.
 
 ---
 
-## Sonra əlavə olunacaq
+### 8. Sürətli şablonlar
+"Çörək 1 ₼", "Yol 0,50 ₼" — əlavə et ekranının yuxarısında ⚡ çiplər. Toxun → "Yadda saxla". 2 toxunuş.
+Şablonları *Daha çox → Şablonlar*-da qurursan.
 
-| Nə | Nə üçün |
-|----|---------|
-| **Sürətli şablonlar** | "Çörək 1 ₼", "Yol 0,50 ₼" — bir toxunuşla |
-| **PIN kodu** | Telefonu başqası götürsə görməsin |
-| **Qaranlıq rejim** | Gecə göz yorulmasın |
-| **Borc izləmə** | Kimə borc vermisən, kim sənə borcludur, nə vaxt qaytarmalıdır |
-| **Yığım hədəfi** | "Marta qədər 3 000 ₼ yığmaq" — nə qədər qalıb, ayda nə qədər lazımdır |
-| **Qəbz şəkli** | Xərcə çekin şəklini əlavə etmək |
-| **Excel-ə çıxarmaq** | Ayın cədvəlini kompüterdə açmaq |
+### 9. Təkrarlanan ödənişlər
+Kommunal, kredit, maaş — hər ayın filan günü. Vaxtı çatanda ana səhifədə xatırladır:
+**"Kommunal · 45 ₼ · [Yaz] [Keç]"**. Özü yazmır — sən "Yaz" basırsan.
+
+### 10. Borclar
+Kimə borc vermisən, kimdən almısan, nə qədər qalıb, nə vaxt qaytarmalıdır.
+Qismən qaytarma, vaxtı keçəndə qırmızı xəbərdarlıq. Ana səhifədə: "Mənə borcludurlar: 350 ₼".
+
+### 11. Yığım hədəfi
+"Telefon üçün 3 000 ₼ — marta qədər" → nə qədər yığılıb, **ayda nə qədər lazımdır**.
+Yığıma qoyduğun pul ümumi qalıqda qalır, amma "sərbəst" puldan ayrı göstərilir.
+
+### 12. Qəbz şəkli
+Xərcə çekin şəklini əlavə et (kamera / qalereya) — siyahıda 📎 işarəsi, toxunanda böyüyür.
+
+### 13. Excel-ə çıxarmaq
+*Daha çox → Excel / CSV ixrac* → ayın cədvəli WhatsApp / Telegram / Drive ilə gedir, kompüterdə Excel-də açılır.
+
+### 14. PIN və qaranlıq rejim
+*Daha çox → Ayarlar*: 4 rəqəmli PIN (unutsan bərpa sözü ilə açırsan), tema (sistem / açıq / qaranlıq).
 
 ---
 
@@ -79,7 +92,7 @@ Bunlara cavab versən, tətbiq birbaşa sənə uyğun qurulacaq:
 2. **Gəlir mənbələri** — Maaş · Əlavə iş · Hədiyyə · Satış · Digər — başqa nə var?
 3. **Neçə kartın var?** Bir, yoxsa bir neçə (hər biri ayrıca göstərilə bilər)?
 4. **Ən çox təkrarlanan xərclərin** hansılardır? (şablon üçün — məs. çörək, yol, siqaret, kofe)
-5. **PIN kodu istəyirsən**, yoxsa lazım deyil?
+5. **PIN kodu** qoyacaqsan? (Ayarlardan istənilən vaxt)
 6. **Rəng** — yaşıl düşünmüşük; başqa istəyin var?
 
 ---

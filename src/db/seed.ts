@@ -42,7 +42,8 @@ export const SYSTEM_CATEGORIES: (SeedCat & { type: 'expense' | 'income' })[] = [
 export async function ensureSystemCategories(db: KassaDB): Promise<void> {
   const existing = await db.categories.toArray();
   for (const sc of SYSTEM_CATEGORIES) {
-    if (existing.some((c) => c.is_system && c.type === sc.type && c.name === sc.name)) continue;
+    // Hər növ üçün bir sistem kateqoriyası — is_system + növə görə tanınır (ada görə yox)
+    if (existing.some((c) => c.is_system && c.type === sc.type)) continue;
     const count = existing.filter((c) => c.type === sc.type).length;
     await db.categories.add({ id: crypto.randomUUID(), ...sc, sort_order: count + 100, is_archived: 0, is_system: 1 });
   }

@@ -2,6 +2,8 @@ import {
   db, type Attachment, type Budget, type Category, type Debt, type KassaDB, type Recurring, type SettingRow, type Template, type Transaction, type Wallet,
 } from './schema';
 import { todayLocal } from '../domain/dates';
+import { ensureSystemCategories } from './seed';
+import { cleanupOrphanAttachments } from './attachments';
 
 // README §6 — "Yalnız məlumat" backup: JSON; "Tam" backup: ZIP (JSON + qəbz şəkilləri).
 
@@ -30,7 +32,7 @@ export interface BackupFile {
 export type ImportMode = 'replace' | 'merge';
 
 export class BackupError extends Error {
-  constructor(public readonly code: 'invalid' | 'format') {
+  constructor(public readonly code: 'invalid' | 'format' | 'origin') {
     super(`Backup: ${code}`);
   }
 }
@@ -118,6 +120,13 @@ export interface ImportResult {
  */
 export async function importBackup(backup: BackupFile, mode: ImportMode, database: KassaDB = db): Promise<ImportResult> {
   const { data } = backup;
+  // Birləşdirmə yalnız eyni quraşdırmanın faylı ilə mümkündür — başqa quraşdırmanın seed sətirləri
+  // (Nağd, Kart, kateqoriyalar) fərqli id daşıyır və ikiqat olardı
+  if (mode === 'merge') {
+    const fileOrigin = data.settings.find((s) => s.key === 'installed_at')?.value;
+    const localOrigin = (await database.settings.get('installed_at'))?.value;
+    if (fileOrigin && localOrigin && fileOrigin !== localOrigin) throw new BackupError('origin');
+  }
   await database.transaction(
     'rw',
     [database.wallets, database.categories, database.transactions, database.budgets, database.debts, database.templates, database.settings, database.recurring],
@@ -146,6 +155,9 @@ export async function importBackup(backup: BackupFile, mode: ImportMode, databas
       await database.settings.put({ key: 'onboarded', value: true });
     },
   );
+  // Köhnə fayllarda sistem kateqoriyaları yoxdur; əməliyyatı silinmiş şəkillər də gedir
+  await ensureSystemCategories(database);
+  await cleanupOrphanAttachments(database);
   return { transactions: data.transactions.length, wallets: data.wallets.length, categories: data.categories.length };
 }
 
@@ -213,10 +225,13 @@ export async function readBackupFile(file: Blob): Promise<FullBackup> {
   return { backup, attachments };
 }
 
-/** importBackup + şəkillər. replace: köhnə şəkillər silinir. */
+/**
+ * importBackup + şəkillər. Replace: yalnız fayl özü şəkil daşıyırsa (ZIP) köhnə şəkillər silinir;
+ * JSON faylı şəkil daşımır — eyni id ilə qalan əməliyyatların qəbzləri qorunur, yetimlər təmizlənir.
+ */
 export async function importFullBackup(full: FullBackup, mode: ImportMode, database: KassaDB = db): Promise<ImportResult & { attachments: number }> {
+  if (mode === 'replace' && full.attachments.length) await database.attachments.clear();
   const result = await importBackup(full.backup, mode, database);
-  if (mode === 'replace') await database.attachments.clear();
   if (full.attachments.length) await database.attachments.bulkPut(full.attachments);
   return { ...result, attachments: full.attachments.length };
 }

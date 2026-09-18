@@ -51,7 +51,7 @@ export function CategoriesPage() {
       setError(t.categories.errors.name!);
       return;
     }
-    if (draft.id) await updateCategory(draft.id, { name: draft.name, icon: draft.icon, color: draft.color });
+    if (draft.id) await updateCategory(draft.id, { ...(draft.is_system ? {} : { name: draft.name }), icon: draft.icon, color: draft.color });
     else await createCategory({ type, name: draft.name, icon: draft.icon, color: draft.color });
     setDraft(null);
   }
@@ -109,7 +109,7 @@ export function CategoriesPage() {
         {draft && (
           <div className="space-y-4">
             <Field label={t.categories.name}>
-              <input value={draft.name} maxLength={30} autoFocus={!draft.id} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={inputClass} />
+              <input value={draft.name} maxLength={30} autoFocus={!draft.id} disabled={draft.is_system} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={`${inputClass} disabled:opacity-60`} />
             </Field>
             <Field label={t.categories.icon}>
               <EmojiPicker value={draft.icon} options={emojis.includes(draft.icon) ? emojis : [draft.icon, ...emojis]} onChange={(icon) => setDraft({ ...draft, icon })} label={t.categories.icon} />

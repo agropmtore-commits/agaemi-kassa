@@ -6,7 +6,9 @@ import { Card, Chip } from '../../components/ui';
 import { TxRow } from '../../components/TxRow';
 import type { Transaction, TransactionType } from '../../db/schema';
 import { useCategoryMap, useDebtMap, useMonthTransactions, useWalletMap, useWallets } from '../../hooks/useData';
-import { currentMonthKey, dayLabel, monthLabel, shiftMonth } from '../../domain/dates';
+import { currentMonthKey, dayLabel, monthKey, monthLabel, shiftMonth } from '../../domain/dates';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/schema';
 import { formatMoney, parseMoney } from '../../domain/money';
 import { groupByDay, monthSummary } from '../../domain/stats';
 import { useAttachmentTxIds } from './Receipts';
@@ -28,6 +30,9 @@ export function TransactionsPage() {
   const wallets = useWalletMap();
   const walletList = useWallets();
   const debts = useDebtMap();
+  // Gələcək tarixli əməliyyat varsa (forma +365 günə icazə verir) onun ayına qədər irəli getmək olar
+  const latestDate = useLiveQuery(async () => (await db.transactions.orderBy('date').last())?.date, []);
+  const maxMonth = latestDate && monthKey(latestDate) > currentMonthKey() ? monthKey(latestDate) : currentMonthKey();
   const withReceipts = useAttachmentTxIds();
 
   const filtered = useMemo(() => {
@@ -39,9 +44,9 @@ export function TransactionsPage() {
       if (walletFilter && tx.wallet_id !== walletFilter && tx.to_wallet_id !== walletFilter) return false;
       if (categoryFilter && tx.category_id !== categoryFilter) return false;
       if (!q) return true;
-      return matchesQuery(tx, q, qAmount, categories);
+      return matchesQuery(tx, q, qAmount, categories, debts);
     });
-  }, [txs, categories, typeFilter, walletFilter, categoryFilter, query]);
+  }, [txs, categories, debts, typeFilter, walletFilter, categoryFilter, query]);
 
   const summary = useMemo(() => (txs ? monthSummary(txs, month) : undefined), [txs, month]);
   const groups = useMemo(() => (filtered ? groupByDay(filtered) : []), [filtered]);
@@ -73,7 +78,7 @@ export function TransactionsPage() {
         <button
           type="button"
           onClick={() => setMonth((m) => shiftMonth(m, 1))}
-          disabled={month >= currentMonthKey()}
+          disabled={month >= maxMonth}
           aria-label={t.transactions.nextMonth}
           className="rounded-full p-2 active:bg-(--app-border) disabled:opacity-30"
         >
@@ -162,8 +167,10 @@ export function TransactionsPage() {
   );
 }
 
-function matchesQuery(tx: Transaction, q: string, qAmount: number | null, categories: Map<string, { name: string }>): boolean {
+function matchesQuery(tx: Transaction, q: string, qAmount: number | null, categories: Map<string, { name: string }>, debts?: Map<string, { person: string }>): boolean {
   if (tx.note?.toLocaleLowerCase('az').includes(q)) return true;
+  // Borc hərəkətləri şəxsin adı ilə tapılsın
+  if (tx.debt_id && debts?.get(tx.debt_id)?.person.toLocaleLowerCase('az').includes(q)) return true;
   const catName = tx.category_id ? categories.get(tx.category_id)?.name.toLocaleLowerCase('az') : undefined;
   if (catName?.includes(q)) return true;
   if (qAmount !== null && tx.amount === qAmount) return true;

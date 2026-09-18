@@ -115,3 +115,31 @@ describe('backup', () => {
     expect(() => parseBackup(JSON.stringify({ app: 'agaemi-kassa', format: 1, data: { wallets: [{}] } }))).toThrow(BackupError);
   });
 });
+
+describe('icmal düzəlişləri (2026-09-18)', () => {
+  it('archiving a category removes its budget; archived wallet balance cannot be edited', async () => {
+    await setBudget(food, 40000, db);
+    await setCategoryArchived(food, true, db);
+    expect(await findBudget(food, db)).toBeUndefined();
+    await createTransaction({ type: 'transfer', amount: 50000, date: '2026-09-18', wallet_id: card, to_wallet_id: cash }, db);
+    await setWalletArchived(card, true, db);
+    await expect(updateWallet(card, { initial_balance: 1 }, db)).rejects.toMatchObject({ code: 'archived' });
+    await updateWallet(card, { name: 'Köhnə kart' }, db); // ad dəyişə bilər
+  });
+
+  it('merge refuses a backup from another install; JSON replace keeps receipts of surviving transactions', async () => {
+    const tx = await createTransaction({ type: 'expense', amount: 100, date: '2026-09-18', wallet_id: cash, category_id: food }, db);
+    await db.attachments.add({ id: 'a', transaction_id: tx.id, blob: new Blob([new Uint8Array([1])]), mime: 'image/jpeg', width: 1, height: 1, size: 1, created_at: '' });
+    const backup = await createBackup(db);
+
+    const other = new KassaDB(`test-${crypto.randomUUID()}`);
+    await other.open();
+    await expect(importBackup(backup, 'merge', other)).rejects.toMatchObject({ code: 'origin' });
+    await other.delete();
+
+    const { importFullBackup } = await import('../src/db/backup');
+    await importFullBackup({ backup, attachments: [] }, 'replace', db);
+    expect(await db.attachments.count()).toBe(1); // eyni id ilə qalan əməliyyatın qəbzi qorunur
+    expect((await db.categories.toArray()).filter((c) => c.is_system)).toHaveLength(2);
+  });
+});

@@ -46,7 +46,10 @@ export function ExportPage() {
           ? new File([await buildXlsx(txs, ctx)], `${stem}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
           : new File([buildCsv(txs, ctx)], `${stem}.csv`, { type: 'text/csv' });
       const result = await deliverFile(file, method);
-      if (result !== 'aborted') toast({ message: `${t.exportPage.ready} · ${file.name}` });
+      if (result === 'downloaded_fallback') toast({ message: t.backup.sharedAsDownload, duration: 7000 });
+      else if (result !== 'aborted') toast({ message: `${t.exportPage.ready} · ${file.name}` });
+    } catch (e) {
+      toast({ message: `${t.backup.exportFailed}: ${(e as Error).message}`, duration: 7000 });
     } finally {
       setBusy(false);
     }

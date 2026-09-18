@@ -2,7 +2,7 @@ import { db, newId, nowIso, type Debt, type DebtDirection, type KassaDB, type Tr
 import { availableForOutgoing, walletBalances } from '../domain/balance';
 import { isIsoDate } from '../domain/dates';
 import { debtOpening, debtRemaining, openingDirection, repaymentDirection } from '../domain/debt';
-import { SYSTEM_CATEGORIES } from './seed';
+import { ensureSystemCategories } from './seed';
 
 // README §5.1 — borc hərəkətləri `transactions`-da type='debt' sətirləridir; qalan məbləğ hesablanır.
 
@@ -140,8 +140,12 @@ export async function forgiveDebt(debtId: string, date: string, database: KassaD
   if (!walletId) throw new DebtError('wallet');
 
   const sysType = debt.direction === 'lent' ? 'expense' : 'income';
-  const sys = SYSTEM_CATEGORIES.find((c) => c.type === sysType);
-  const category = sys ? (await database.categories.toArray()).find((c) => c.is_system && c.type === sys.type && c.name === sys.name) : undefined;
+  // Sistem kateqoriyası növ üzrə tapılır; yoxdursa (köhnə idxal) əvvəl yaradılır
+  let category = (await database.categories.toArray()).find((c) => c.is_system && c.type === sysType);
+  if (!category) {
+    await ensureSystemCategories(database);
+    category = (await database.categories.toArray()).find((c) => c.is_system && c.type === sysType);
+  }
   const now = nowIso();
 
   await database.transaction('rw', database.debts, database.transactions, async () => {
@@ -193,9 +197,13 @@ export async function updateDebt(id: string, patch: DebtPatch, database: KassaDB
     if (!Number.isInteger(patch.initial_amount) || patch.initial_amount <= 0) throw new DebtError('amount');
     const repaid = debt.initial_amount - debtRemaining(debt, txs);
     if (patch.initial_amount < repaid) throw new DebtError('too_much');
-    if (opening && debt.direction === 'lent') await assertWalletCanPay(opening.wallet_id, patch.initial_amount, database, opening);
+    // Yalnız məbləğ ARTANDA cüzdan yoxlanır — arxivdəki cüzdanla köhnə borcun adı / tarixi dəyişə bilsin
+    if (opening && debt.direction === 'lent' && patch.initial_amount > debt.initial_amount) {
+      await assertWalletCanPay(opening.wallet_id, patch.initial_amount, database, opening);
+    }
     changes.initial_amount = patch.initial_amount;
-    if (debt.status === 'closed' && patch.initial_amount > repaid) changes.status = 'open';
+    // Status qalandan çıxır: qalan > 0 → açıq, 0 → bağlı (bağışlanmış dəyişmir)
+    if (debt.status !== 'forgiven') changes.status = patch.initial_amount > repaid ? 'open' : 'closed';
   }
 
   await database.transaction('rw', database.debts, database.transactions, async () => {

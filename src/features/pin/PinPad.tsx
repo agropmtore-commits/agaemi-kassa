@@ -47,12 +47,15 @@ export function PinEntry({
   title,
   subtitle,
   error,
+  notice,
   disabled,
   onComplete,
 }: {
   title: string;
   subtitle?: string;
   error?: string;
+  /** silkələnmə olmadan göstərilən mətn (məs. gözləmə sayğacı) */
+  notice?: string;
   disabled?: boolean;
   onComplete: (pin: string) => void;
 }) {
@@ -93,6 +96,7 @@ export function PinEntry({
       <p className="mb-3 min-h-5 text-center text-sm font-medium text-expense" role="alert">
         {error ?? ''}
       </p>
+      {notice && <p className="mb-3 text-center text-sm text-(--app-muted)">{notice}</p>}
       <PinKeypad onKey={onKey} disabled={disabled} />
     </div>
   );

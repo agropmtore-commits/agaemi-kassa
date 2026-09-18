@@ -105,3 +105,37 @@ describe('db/recurring', () => {
     expect(await db.recurring.count()).toBe(0);
   });
 });
+
+describe('icmal düzəlişləri (2026-09-18)', () => {
+  let db: KassaDB;
+  let cash: string;
+  let food: string;
+  const today = '2026-09-18';
+
+  beforeEach(async () => {
+    db = new KassaDB(`test-${crypto.randomUUID()}`);
+    await db.open();
+    cash = (await db.wallets.orderBy('sort_order').first())!.id;
+    food = (await db.categories.where({ type: 'expense' }).first())!.id;
+    await db.wallets.update(cash, { initial_balance: 100000 });
+  });
+
+  it('editing the name keeps next_date; changing the day recomputes from today (not from the old next date)', async () => {
+    const r = await createRecurring({ name: 'x', type: 'expense', amount: 1, category_id: food, period: 'monthly', day: 25 }, db, today);
+    expect(r.next_date).toBe('2026-09-25');
+    await skipOccurrence(r.id, db); // → 2026-10-25
+    const base = { type: 'expense' as const, amount: 1, category_id: food, period: 'monthly' as const };
+    await updateRecurring(r.id, { ...base, name: 'y', day: 25 }, db, today);
+    expect((await db.recurring.get(r.id))!.next_date).toBe('2026-10-25');
+    await updateRecurring(r.id, { ...base, name: 'y', day: 20 }, db, today);
+    expect((await db.recurring.get(r.id))!.next_date).toBe('2026-09-20');
+  });
+
+  it('a rule bound to an archived wallet falls back to an active one', async () => {
+    const card = (await db.wallets.orderBy('sort_order').toArray())[1]!.id;
+    const r = await createRecurring({ name: 'x', type: 'expense', amount: 500, category_id: food, wallet_id: card, period: 'monthly', day: 18, start_date: today }, db, today);
+    await db.wallets.update(card, { is_archived: 1 });
+    const tx = await writeOccurrence(r.id, db);
+    expect(tx.wallet_id).toBe(cash);
+  });
+});

@@ -100,3 +100,8 @@ export function daysInRange(start: string, end: string): number {
 export function monthKeysBack(endKey: string, n: number): string[] {
   return Array.from({ length: n }, (_, i) => shiftMonth(endKey, i - (n - 1)));
 }
+
+/** ISO vaxt damğasından bu günə qədər təqvim günləri (yerli): dünən 23:00 → 1. Mənfi olmur. */
+export function daysSince(iso: string, today = todayLocal()): number {
+  return Math.max(0, daysInRange(todayLocal(new Date(iso)), today) - 1);
+}

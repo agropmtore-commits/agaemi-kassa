@@ -51,11 +51,42 @@ describe('createTransaction', () => {
     expect(await db.transactions.count()).toBe(0);
   });
 
-  it('rejects unknown or archived wallets', async () => {
+  it('rejects unknown or archived wallets (archived → "archived" so the UI can explain)', async () => {
     await db.wallets.update(card, { is_archived: 1 });
     await expect(
       createTransaction({ type: 'income', amount: 100, date: '2026-09-18', wallet_id: card, category_id: salary }, db),
+    ).rejects.toMatchObject({ errors: ['archived'] });
+    await expect(
+      createTransaction({ type: 'income', amount: 100, date: '2026-09-18', wallet_id: 'nope', category_id: salary }, db),
     ).rejects.toMatchObject({ errors: ['wallet'] });
+  });
+
+  it('archived wallet: editing note/date of an existing row is allowed, changing amount or deleting is not', async () => {
+    const tx = await createTransaction({ type: 'expense', amount: 5000, date: '2026-09-18', wallet_id: card, category_id: food }, db);
+    await db.wallets.update(card, { is_archived: 1 });
+    await updateTransaction(tx.id, { type: 'expense', amount: 5000, date: '2026-09-17', wallet_id: card, category_id: food, note: 'düzəliş' }, db);
+    await expect(updateTransaction(tx.id, { type: 'expense', amount: 4000, date: '2026-09-17', wallet_id: card, category_id: food }, db)).rejects.toMatchObject({ errors: ['archived'] });
+    await expect(updateTransaction(tx.id, { type: 'expense', amount: 5000, date: '2026-09-17', wallet_id: cash, category_id: food }, db)).resolves.toBeTruthy(); // başqa cüzdana keçirmək olar
+    const tx2 = await createTransaction({ type: 'expense', amount: 100, date: '2026-09-18', wallet_id: cash, category_id: food }, db);
+    await db.wallets.update(cash, { is_archived: 1 });
+    await expect(deleteTransaction(tx2.id, db)).rejects.toMatchObject({ errors: ['archived'] });
+  });
+
+  it('transfer: deleting or re-targeting cannot push the destination negative; savings wallet never becomes last_wallet_id', async () => {
+    const goal = await db.wallets.add({ id: 'goal', name: 'Hədəf', type: 'savings', initial_balance: 0, color: '', icon: '', sort_order: 9, is_archived: 0, created_at: '' });
+    const inTx = await createTransaction({ type: 'transfer', amount: 20000, date: '2026-09-18', wallet_id: cash, to_wallet_id: goal }, db);
+    await createTransaction({ type: 'transfer', amount: 20000, date: '2026-09-19', wallet_id: goal, to_wallet_id: cash }, db);
+    expect((await db.settings.get('last_wallet_id'))!.value).toBe(cash); // yığım cüzdanı sonuncu olmur
+    await expect(deleteTransaction(inTx.id, db)).rejects.toMatchObject({ errors: ['insufficient_to'] });
+    await expect(updateTransaction(inTx.id, { type: 'transfer', amount: 20000, date: '2026-09-18', wallet_id: cash, to_wallet_id: card }, db)).rejects.toMatchObject({ errors: ['insufficient_to'] });
+    await expect(updateTransaction(inTx.id, { type: 'transfer', amount: 10000, date: '2026-09-18', wallet_id: cash, to_wallet_id: goal }, db)).rejects.toMatchObject({ errors: ['insufficient_to'] });
+  });
+
+  it('debt movements are refused by the generic update/delete path', async () => {
+    const now = new Date().toISOString();
+    await db.transactions.add({ id: 'd1', type: 'debt', amount: 100, date: '2026-09-18', wallet_id: cash, debt_id: 'x', debt_direction: 'out', created_at: now, updated_at: now });
+    await expect(deleteTransaction('d1', db)).rejects.toMatchObject({ errors: ['debt'] });
+    await expect(updateTransaction('d1', { type: 'expense', amount: 100, date: '2026-09-18', wallet_id: cash, category_id: food }, db)).rejects.toMatchObject({ errors: ['debt'] });
   });
 
   it('stores a transfer without a category', async () => {

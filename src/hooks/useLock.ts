@@ -1,64 +1,73 @@
 import { useCallback, useEffect, useState } from 'react';
 
 // README §5.4 — tətbiq açılanda və N dəqiqə arxa planda qalandan sonra PIN soruşulur.
-// Son aktiv vaxt sessionStorage-dədir: tətbiq tam bağlananda silinir (açılışda kilid),
-// arxa plana keçəndə qalır (vaxta görə kilid). Dev-də səhifə yenilənəndə hər dəfə soruşmur.
+// sessionStorage: `unlockedAt` (son açılma / PIN qurulma), `hiddenAt` (arxa plana keçmə).
+// Kilid yalnız real arxa plan hadisəsindən sonra qiymətləndirilir — ayarlarda vaxtı dəyişmək kilidləmir;
+// "Dərhal" (0) = hər arxa plandan qayıdanda. Tətbiq tam bağlananda sessionStorage silinir → açılışda kilid.
 
-const KEY = 'kassa.lastActiveAt';
+const UNLOCKED_KEY = 'kassa.unlockedAt';
+const HIDDEN_KEY = 'kassa.hiddenAt';
 
-function lastActiveAt(): number | null {
+function read(key: string): number | null {
   try {
-    const v = sessionStorage.getItem(KEY);
+    const v = sessionStorage.getItem(key);
     return v ? Number(v) : null;
   } catch {
     return null;
   }
 }
 
-/** Sessiyanı aktiv işarələ — PIN qoyulan anda çağırılır ki, yeni PIN dərhal soruşulmasın. */
-export function markActive(): void {
-  touch();
-}
-
-function touch(): void {
+function write(key: string, value: number | null): void {
   try {
-    sessionStorage.setItem(KEY, String(Date.now()));
+    if (value === null) sessionStorage.removeItem(key);
+    else sessionStorage.setItem(key, String(value));
   } catch {
     // private rejim və s. — kilid sadəcə hər açılışda soruşulur
   }
 }
 
+/** Sessiyanı açıq işarələ — PIN qurulan anda və hər açılmada. */
+export function markActive(): void {
+  write(UNLOCKED_KEY, Date.now());
+  write(HIDDEN_KEY, null);
+}
+
 function shouldLock(timeoutMin: number): boolean {
-  const last = lastActiveAt();
-  if (last === null) return true;
-  return Date.now() - last >= timeoutMin * 60_000;
+  const unlockedAt = read(UNLOCKED_KEY);
+  if (unlockedAt === null) return true; // təzə sessiya
+  const hiddenAt = read(HIDDEN_KEY);
+  if (hiddenAt === null || hiddenAt < unlockedAt) return false; // açılandan bəri arxa plana keçməyib
+  return Date.now() - hiddenAt >= timeoutMin * 60_000;
 }
 
 /** `hasPin` undefined ikən (ayarlar yüklənir) `locked` də undefined-dır. */
 export function useLock(hasPin: boolean | undefined, timeoutMin: number): { locked: boolean | undefined; unlock: () => void } {
   const [locked, setLocked] = useState<boolean | undefined>(undefined);
 
+  // İlkin qiymətləndirmə yalnız PIN vəziyyəti məlum olanda / dəyişəndə; vaxt limiti dəyişəndə yox
   useEffect(() => {
     if (hasPin === undefined) return;
     setLocked(hasPin ? shouldLock(timeoutMin) : false);
-  }, [hasPin, timeoutMin]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPin]);
 
   useEffect(() => {
     if (!hasPin) return;
+    const onHidden = () => write(HIDDEN_KEY, Date.now());
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') touch();
+      if (document.visibilityState === 'hidden') onHidden();
       else if (shouldLock(timeoutMin)) setLocked(true);
     };
     document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', touch);
+    window.addEventListener('pagehide', onHidden);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', touch);
+      window.removeEventListener('pagehide', onHidden);
     };
   }, [hasPin, timeoutMin]);
 
   const unlock = useCallback(() => {
-    touch();
+    markActive();
     setLocked(false);
   }, []);
 

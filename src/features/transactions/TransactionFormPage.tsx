@@ -62,7 +62,12 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   // Form birbaşa açılıbsa (qısayol / yeni tab) — yadda saxlayandan sonra Panelə, tarixçəyə yox
   const openedDirectly = useRef(location.key === 'default');
 
-  const wallets = useWallets();
+  const allWallets = useWallets(true);
+  // Aktiv cüzdanlar + (redaktədə) əməliyyatın öz arxiv cüzdanı — sətir səssizcə başqa cüzdana keçməsin
+  const wallets = useMemo(
+    () => allWallets?.filter((w) => !w.is_archived || w.id === existing?.wallet_id || w.id === existing?.to_wallet_id),
+    [allWallets, existing?.wallet_id, existing?.to_wallet_id],
+  );
   const lastWalletId = useSetting('last_wallet_id');
   const balances = useBalances();
 
@@ -103,11 +108,12 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
     setErrors([]);
   }
 
-  // Default cüzdanlar yüklənəndə: sonuncu istifadə olunan, yoxdursa birinci
+  // Default cüzdan (yalnız yeni əməliyyatda): sonuncu istifadə olunan, yoxdursa birinci aktiv adi cüzdan
   useEffect(() => {
     if (!wallets?.length) return;
     if (!walletId || !wallets.some((w) => w.id === walletId)) {
-      const preferred = wallets.find((w) => w.id === lastWalletId) ?? wallets[0]!;
+      const usable = wallets.filter((w) => !w.is_archived);
+      const preferred = usable.find((w) => w.id === lastWalletId) ?? usable.find((w) => w.type !== 'savings') ?? usable[0] ?? wallets[0]!;
       setWalletId(preferred.id);
     }
   }, [wallets, lastWalletId, walletId]);
@@ -122,6 +128,15 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
 
   const step = params.get('step') === '2' && amount.qepik > 0 && type !== 'transfer' ? 2 : 1;
   const style = TYPE_STYLE[type];
+  // Səhifə ?step=2 ilə bərpa olunubsa (yenilənmə / kilid) məbləğ 0-dır — parametri sil ki, ilk rəqəm dərhal addım 2-yə atmasın
+  useEffect(() => {
+    if (params.get('step') === '2' && amount.qepik === 0) {
+      const next = new URLSearchParams(params);
+      next.delete('step');
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Şablonun kateqoriyası bu növ üçün hələ mövcuddursa birbaşa yadda saxlanır
   const directCategory = type !== 'transfer' && templateCategoryId && categories?.some((c) => c.id === templateCategoryId) ? templateCategoryId : null;
 
@@ -155,15 +170,15 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
       if (existing) {
         const before = existing;
         await updateTransaction(existing.id, input);
-        await savePending(existing.id);
-        toast({ message: t.form.updated, action: { label: t.common.undo, onClick: () => restoreTransaction(before) } });
+        const failed = await savePending(existing.id);
+        toast({ message: withReceiptWarning(t.form.updated, failed), action: { label: t.common.undo, onClick: () => restoreTransaction(before) } });
       } else {
         const created = await createTransaction(input);
-        await savePending(created.id);
+        const failed = await savePending(created.id);
         if (appliedTemplateId) void bumpTemplateUse(appliedTemplateId);
         toast({
-          message: `${t.form.saved[type]} · ${formatMoney(created.amount)}`,
-          action: { label: t.common.undo, onClick: async () => void (await deleteTransaction(created.id)) },
+          message: withReceiptWarning(`${t.form.saved[type]} · ${formatMoney(created.amount)}`, failed),
+          action: { label: t.common.undo, onClick: async () => void (await deleteTransaction(created.id).catch(() => undefined)) },
         });
       }
       // Addım 2-dən qayıdanda tarixçədə 2 giriş var (?step=2 və form) — hər ikisini keç
@@ -177,24 +192,36 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
     }
   }
 
-  async function savePending(txId: string) {
+  /** Gözləyən şəkilləri yazır; oxunmayanların sayını qaytarır (bir toast digərini əzməsin deyə birləşdirilir) */
+  async function savePending(txId: string): Promise<number> {
+    let failed = 0;
     for (const file of pendingFiles) {
       try {
         await addAttachment(txId, file);
       } catch {
-        toast({ message: t.receipts.failed });
+        failed += 1;
       }
     }
     setPendingFiles([]);
+    return failed;
+  }
+
+  function withReceiptWarning(message: string, failed: number): string {
+    return failed > 0 ? `${message} · ${t.receipts.failed} (${failed})` : message;
   }
 
   async function remove() {
     if (!existing) return;
-    const deleted = await deleteTransaction(existing.id);
-    if (deleted) {
-      toast({ message: t.transactions.deleted, action: { label: t.common.undo, onClick: () => restoreTransaction(deleted) } });
+    try {
+      const deleted = await deleteTransaction(existing.id);
+      if (deleted) {
+        toast({ message: t.transactions.deleted, action: { label: t.common.undo, onClick: () => restoreTransaction(deleted) } });
+      }
+      goBack();
+    } catch (e) {
+      if (e instanceof TxValidationError) toast({ message: e.errors.map((x) => t.form.errors[x]).join(' · '), duration: 7000 });
+      else throw e;
     }
-    goBack();
   }
 
   const title = existing ? t.form.editTitle : t.form.addTitle[type]!;
@@ -318,6 +345,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
             {(wallets ?? []).map((w) => (
               <Chip key={w.id} active={w.id === walletId} onClick={() => setWalletId(w.id)}>
                 {w.icon} {w.name}
+                {w.is_archived ? ` (${t.wallets.archived.toLocaleLowerCase('az')})` : ''}
               </Chip>
             ))}
           </ChipRow>

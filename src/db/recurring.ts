@@ -51,12 +51,16 @@ export async function createRecurring(input: RecurringInput, database: KassaDB =
   return rule;
 }
 
-/** Dəyişiklikdə növbəti tarix yenidən hesablanır (gün / dövr dəyişə bilər). */
 export async function updateRecurring(id: string, input: RecurringInput, database: KassaDB = db, today = todayLocal()): Promise<void> {
   const existing = await database.recurring.get(id);
   if (!existing) throw new Error('Tapılmadı');
   validate(input);
-  await database.recurring.put({ id, ...normalize(input, today), is_active: existing.is_active, created_at: existing.created_at });
+  // Növbəti tarix yalnız cədvəl (dövr / gün) dəyişəndə və ya ilk tarix açıq verilən halda yenidən hesablanır;
+  // ad / məbləğ dəyişikliyi "Keç" ilə ötürülmüş dövrü geri gətirməsin
+  const scheduleChanged = input.period !== existing.period || input.day !== existing.day || Boolean(input.start_date);
+  const fresh = normalize(input, today);
+  const next = scheduleChanged ? fresh.next_date : existing.next_date;
+  await database.recurring.put({ id, ...fresh, next_date: next, is_active: existing.is_active, created_at: existing.created_at });
 }
 
 export function deleteRecurring(id: string, database: KassaDB = db): Promise<void> {
@@ -75,8 +79,9 @@ export async function setRecurringActive(id: string, active: boolean, database: 
 export async function writeOccurrence(id: string, database: KassaDB = db): Promise<Transaction> {
   const r = await database.recurring.get(id);
   if (!r) throw new Error('Tapılmadı');
-  let walletId = r.wallet_id;
-  if (!walletId || !(await database.wallets.get(walletId))) {
+  const own = r.wallet_id ? await database.wallets.get(r.wallet_id) : undefined;
+  let walletId: string | undefined = own && !own.is_archived ? own.id : undefined;
+  if (!walletId) {
     const last = (await database.settings.get('last_wallet_id'))?.value as string | undefined;
     const lastWallet = last ? await database.wallets.get(last) : undefined;
     const wallet =
