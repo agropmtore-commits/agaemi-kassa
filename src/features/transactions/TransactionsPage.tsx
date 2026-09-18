@@ -5,7 +5,7 @@ import { PageTitle } from '../../components/AppShell';
 import { Card, Chip } from '../../components/ui';
 import { TxRow } from '../../components/TxRow';
 import type { Transaction, TransactionType } from '../../db/schema';
-import { useCategoryMap, useMonthTransactions, useWalletMap, useWallets } from '../../hooks/useData';
+import { useCategoryMap, useDebtMap, useMonthTransactions, useWalletMap, useWallets } from '../../hooks/useData';
 import { currentMonthKey, dayLabel, monthLabel, shiftMonth } from '../../domain/dates';
 import { formatMoney, parseMoney } from '../../domain/money';
 import { groupByDay, monthSummary } from '../../domain/stats';
@@ -26,6 +26,7 @@ export function TransactionsPage() {
   const categories = useCategoryMap();
   const wallets = useWalletMap();
   const walletList = useWallets();
+  const debts = useDebtMap();
 
   const filtered = useMemo(() => {
     if (!txs || !categories) return undefined;
@@ -92,7 +93,7 @@ export function TransactionsPage() {
 
       {/* Filtr çipləri */}
       <div className="mb-1 flex gap-2 overflow-x-auto py-1 [scrollbar-width:none]">
-        {(['all', 'expense', 'income', 'transfer'] as TypeFilter[]).map((f) => (
+        {(['all', 'expense', 'income', 'transfer', 'debt'] as TypeFilter[]).map((f) => (
           <Chip key={f} active={typeFilter === f} onClick={() => setTypeFilter(f)}>
             {f === 'all' ? t.common.all : t.types[f]}
           </Chip>
@@ -147,7 +148,7 @@ export function TransactionsPage() {
                 </div>
                 <Card className="divide-y divide-(--app-border) overflow-hidden">
                   {g.items.map((tx) => (
-                    <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} onClick={() => navigate(`/tx/${tx.id}`)} />
+                    <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} debts={debts} onClick={() => navigate(tx.debt_id ? `/more/debts/${tx.debt_id}` : `/tx/${tx.id}`)} />
                   ))}
                 </Card>
               </section>

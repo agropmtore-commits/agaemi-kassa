@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import { seedDatabase } from './seed';
+import { ensureSystemCategories, seedDatabase } from './seed';
 
 // README §8 — Məlumat modeli.
 // Qaydalar: məbləğlər qəpiklə tam ədəd; tarixlər 'YYYY-MM-DD' (yerli gün, saat qurşağı yoxdur);
@@ -165,6 +165,8 @@ export class KassaDB extends Dexie {
       transactions: 'id, date, type, wallet_id, to_wallet_id, category_id, debt_id, [type+date], [date+created_at]',
     });
     this.on('populate', () => seedDatabase(this));
+    // Köhnə bazalar: yeni sistem kateqoriyaları (Mərhələ 6) açılışda əlavə olunur
+    this.on('ready', () => ensureSystemCategories(this));
   }
 }
 

@@ -16,7 +16,7 @@ type Draft = { id?: string; name: string; icon: string; color: string; is_system
 /** README §4.5 — kateqoriyalar və mənbələr: əlavə / dəyiş (ad, ikon, rəng) / arxiv. */
 export function CategoriesPage() {
   const [type, setType] = useState<CategoryType>('expense');
-  const active = useCategories(type);
+  const active = useCategories(type, true);
   const archived = useLiveQuery(() => db.categories.where('[type+is_archived]').equals([type, 1]).sortBy('sort_order'), [type]);
   const toast = useToast();
   const [draft, setDraft] = useState<Draft | null>(null);

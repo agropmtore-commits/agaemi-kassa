@@ -32,6 +32,22 @@ export const DEFAULT_INCOME_CATEGORIES: SeedCat[] = [
   { name: 'Digər', icon: '💰', color: '#6b7280' },
 ];
 
+/** Sistem kateqoriyaları — README §5.1: bağışlanan borc xərc/gəlir kimi görünsün. Silinmir, seçim siyahılarında çıxmır. */
+export const SYSTEM_CATEGORIES: (SeedCat & { type: 'expense' | 'income' })[] = [
+  { type: 'expense', name: t.seed.debtLoss, icon: '🤝', color: '#6b7280' },
+  { type: 'income', name: t.seed.debtForgiven, icon: '🤝', color: '#6b7280' },
+];
+
+/** Köhnə bazalarda çatışmayan sistem kateqoriyalarını əlavə edir (idempotent). */
+export async function ensureSystemCategories(db: KassaDB): Promise<void> {
+  const existing = await db.categories.toArray();
+  for (const sc of SYSTEM_CATEGORIES) {
+    if (existing.some((c) => c.is_system && c.type === sc.type && c.name === sc.name)) continue;
+    const count = existing.filter((c) => c.type === sc.type).length;
+    await db.categories.add({ id: crypto.randomUUID(), ...sc, sort_order: count + 100, is_archived: 0, is_system: 1 });
+  }
+}
+
 export const DEFAULT_WALLETS: Pick<Wallet, 'name' | 'type' | 'icon' | 'color'>[] = [
   { name: t.seed.wallets.cash, type: 'cash', icon: '💵', color: '#16a34a' },
   { name: t.seed.wallets.card, type: 'card', icon: '💳', color: '#2563eb' },
@@ -70,6 +86,7 @@ export async function seedDatabase(db: KassaDB): Promise<void> {
   }));
 
   await db.categories.bulkAdd(categories);
+  await ensureSystemCategories(db);
   await db.wallets.bulkAdd(wallets);
   await db.settings.add({ key: 'installed_at', value: now });
 }

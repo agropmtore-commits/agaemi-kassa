@@ -15,6 +15,8 @@ import { BackupPage } from './features/settings/BackupPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import { TemplatesPage } from './features/templates/TemplatesPage';
+import { DebtsPage } from './features/debts/DebtsPage';
+import { DebtDetailPage } from './features/debts/DebtDetailPage';
 import { LockScreen } from './features/pin/LockScreen';
 import { useSettings } from './hooks/useData';
 import { useLock } from './hooks/useLock';
@@ -60,6 +62,8 @@ export function App() {
               <Route path="more/backup" element={<BackupPage />} />
               <Route path="more/settings" element={<SettingsPage />} />
               <Route path="more/templates" element={<TemplatesPage />} />
+              <Route path="more/debts" element={<DebtsPage />} />
+              <Route path="more/debts/:id" element={<DebtDetailPage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
             <Route path="add" element={<TransactionFormPage />} />

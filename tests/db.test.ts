@@ -15,8 +15,10 @@ describe('KassaDB seed', () => {
     const income = await db.categories.where({ type: 'income' }).toArray();
     const wallets = await db.wallets.orderBy('sort_order').toArray();
 
-    expect(expense).toHaveLength(DEFAULT_EXPENSE_CATEGORIES.length);
-    expect(income).toHaveLength(DEFAULT_INCOME_CATEGORIES.length);
+    // default + 1 sistem kateqoriyası (Borc itkisi / Bağışlanmış borc)
+    expect(expense).toHaveLength(DEFAULT_EXPENSE_CATEGORIES.length + 1);
+    expect(income).toHaveLength(DEFAULT_INCOME_CATEGORIES.length + 1);
+    expect(expense.filter((c) => c.is_system).map((c) => c.name)).toEqual(['Borc itkisi']);
     expect(wallets.map((w) => w.name)).toEqual(DEFAULT_WALLETS.map((w) => w.name));
     expect(wallets.every((w) => w.initial_balance === 0 && w.is_archived === 0)).toBe(true);
 

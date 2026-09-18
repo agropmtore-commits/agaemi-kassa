@@ -88,7 +88,7 @@ describe('backup', () => {
     await fresh.open();
     await fresh.settings.put({ key: 'theme', value: 'light' });
     const result = await importBackup(parsed, 'replace', fresh);
-    expect(result).toEqual({ transactions: 1, wallets: 2, categories: 18 });
+    expect(result).toEqual({ transactions: 1, wallets: 2, categories: 20 }); // 18 default + 2 sistem
     expect(await fresh.transactions.toArray()).toEqual(await db.transactions.toArray());
     expect((await fresh.wallets.get(cash))!.initial_balance).toBe(10000);
     expect((await fresh.budgets.toArray())[0]!.amount).toBe(40000);

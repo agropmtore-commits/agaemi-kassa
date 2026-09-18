@@ -8,7 +8,9 @@ import { backupReminderDue, budgetProgress } from '../../domain/budget';
 import { LEVEL_BAR, LEVEL_TEXT } from '../budgets/levels';
 import { Card, SectionTitle } from '../../components/ui';
 import { TxRow } from '../../components/TxRow';
-import { useBalances, useCategoryMap, useMonthTransactions, useRecentTransactions, useSettings, useWalletMap } from '../../hooks/useData';
+import { useBalances, useCategoryMap, useDebtMap, useDebtMovements, useMonthTransactions, useRecentTransactions, useSettings, useWalletMap } from '../../hooks/useData';
+import { debtSummary } from '../../domain/debt';
+import { shortDate, todayLocal } from '../../domain/dates';
 import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
 import { delta, monthSummary } from '../../domain/stats';
@@ -25,6 +27,10 @@ export function DashboardPage() {
   const categories = useCategoryMap();
   const wallets = useWalletMap();
   const budgets = useLiveQuery(() => db.budgets.toArray(), []);
+  const debts = useDebtMap();
+  const debtMovements = useDebtMovements();
+  const today = todayLocal();
+  const debtInfo = useMemo(() => (debts && debtMovements ? debtSummary([...debts.values()], debtMovements, today) : undefined), [debts, debtMovements, today]);
   const settings = useSettings();
   const txCount = useLiveQuery(() => db.transactions.count(), []);
 
@@ -53,6 +59,11 @@ export function DashboardPage() {
 
       {over.length > 0 && <Banner kind="danger">{t.budgets.exceededBanner(over.map((p) => nameOf(p.category_id)).join(', '))}</Banner>}
       {warn.length > 0 && <Banner kind="warn">{t.budgets.warnBanner(warn.map((p) => nameOf(p.category_id)).join(', '))}</Banner>}
+      {debtInfo && debtInfo.overdue.length > 0 && (
+        <Banner kind="warn" action={{ label: t.debts.title, onClick: () => navigate('/more/debts') }}>
+          {t.debts.overdueBanner(debtInfo.overdue.map((d) => `${d.person} (${shortDate(d.due_date!, today)})`).join(', '))}
+        </Banner>
+      )}
       {backupDue && (
         <Banner kind="info" action={{ label: t.backup.reminderAction, onClick: () => navigate('/more/backup') }}>
           {settings?.last_backup_at ? t.backup.reminder(t.backup.daysAgo(daysSince(settings.last_backup_at))) : t.backup.reminderNever}
@@ -80,6 +91,18 @@ export function DashboardPage() {
           ))}
         </ul>
       </section>
+
+      {/* Borc xülasəsi — qərar #13: ümumi qalıq real puldur, alacaqlar ayrıca */}
+      {debtInfo && (debtInfo.owedToMe > 0 || debtInfo.iOwe > 0) && (
+        <Link to="/more/debts" className="tabular mt-2 flex items-center justify-between rounded-xl bg-(--app-surface) px-4 py-2 text-sm shadow-sm">
+          <span>
+            {t.debts.owedToMe}: <span className="font-semibold text-income">{formatMoney(debtInfo.owedToMe)}</span>
+          </span>
+          <span>
+            {t.debts.iOwe}: <span className="font-semibold text-expense">{formatMoney(debtInfo.iOwe)}</span>
+          </span>
+        </Link>
+      )}
 
       {/* Düymələr */}
       <section className="mt-4 grid grid-cols-3 gap-2">
@@ -177,7 +200,7 @@ export function DashboardPage() {
           ) : (
             <Card className="divide-y divide-(--app-border) overflow-hidden">
               {recent.map((tx) => (
-                <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} onClick={() => navigate(`/tx/${tx.id}`)} />
+                <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} debts={debts} onClick={() => navigate(tx.debt_id ? `/more/debts/${tx.debt_id}` : `/tx/${tx.id}`)} />
               ))}
             </Card>
           )

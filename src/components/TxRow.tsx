@@ -1,5 +1,6 @@
 import { ArrowLeftRight, HandCoins } from 'lucide-react';
-import type { Category, Transaction, Wallet } from '../db/schema';
+import type { Category, Debt, Transaction, Wallet } from '../db/schema';
+import { openingDirection } from '../domain/debt';
 import { formatMoney } from '../domain/money';
 import { t } from '../i18n/az';
 
@@ -7,11 +8,13 @@ interface Props {
   tx: Transaction;
   categories: Map<string, Category>;
   wallets: Map<string, Wallet>;
+  /** borc sətirləri üçün: şəxs və hərəkət adı */
+  debts?: Map<string, Debt>;
   onClick?: () => void;
 }
 
 /** Siyahı sətri: ikon · ad + qeyd/cüzdan · məbləğ (növə görə rəng və işarə). */
-export function TxRow({ tx, categories, wallets, onClick }: Props) {
+export function TxRow({ tx, categories, wallets, debts, onClick }: Props) {
   const cat = tx.category_id ? categories.get(tx.category_id) : undefined;
   const wallet = wallets.get(tx.wallet_id);
   const toWallet = tx.to_wallet_id ? wallets.get(tx.to_wallet_id) : undefined;
@@ -30,13 +33,17 @@ export function TxRow({ tx, categories, wallets, onClick }: Props) {
       amountClass = 'text-transfer';
       amountText = formatMoney(tx.amount);
       break;
-    case 'debt':
+    case 'debt': {
+      const debt = tx.debt_id ? debts?.get(tx.debt_id) : undefined;
       icon = <HandCoins size={22} aria-hidden />;
-      title = t.types.debt!;
+      title = debt
+        ? t.debts.txRow(debt.person, tx.debt_direction === openingDirection(debt) ? t.debts.opening[debt.direction]! : t.debts.repayment[debt.direction]!)
+        : t.types.debt!;
       subtitle = wallet?.name ?? '';
       amountClass = 'text-debt';
       amountText = formatMoney(tx.debt_direction === 'in' ? tx.amount : -tx.amount, { plus: true });
       break;
+    }
     case 'income':
       icon = <span className="text-xl">{cat?.icon ?? '💰'}</span>;
       title = cat?.name ?? '—';

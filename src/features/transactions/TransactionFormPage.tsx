@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Settings2, Trash2 } from 'lucide-react';
 import { db, type Template, type Transaction, type TransactionType } from '../../db/schema';
@@ -38,7 +38,7 @@ export function TransactionFormPage() {
 
   if (id && existing === undefined) return null;
   if (id && existing === null) return <NotFound />;
-  if (id && existing && existing.type === 'debt') return <NotFound />; // borc hərəkətləri öz ekranından redaktə olunur (Mərhələ 6)
+  if (id && existing && existing.debt_id) return <Navigate to={`/more/debts/${existing.debt_id}`} replace />; // borc hərəkətləri öz ekranından idarə olunur
   return <TransactionForm key={id ?? 'new'} existing={existing ?? undefined} />;
 }
 

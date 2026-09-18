@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, DEFAULT_SETTINGS, type Category, type CategoryType, type Settings, type Transaction, type Wallet } from '../db/schema';
+import { db, DEFAULT_SETTINGS, type Category, type CategoryType, type Debt, type Settings, type Transaction, type Wallet } from '../db/schema';
 import { getAllSettings } from '../db/settings';
 import { totalBalance, walletBalances } from '../domain/balance';
 import { monthBounds } from '../domain/dates';
@@ -17,14 +17,35 @@ export function useWallets(includeArchived = false): Wallet[] | undefined {
   );
 }
 
-export function useCategories(type?: CategoryType): Category[] | undefined {
+/** Aktiv kateqoriyalar. Sistem kateqoriyaları (məs. "Borc itkisi") seçim siyahılarında görünmür — `includeSystem` ilə açılır. */
+export function useCategories(type?: CategoryType, includeSystem = false): Category[] | undefined {
   return useLiveQuery(
-    () =>
-      type
-        ? db.categories.where('[type+is_archived]').equals([type, 0]).sortBy('sort_order')
-        : db.categories.where('is_archived').equals(0).sortBy('sort_order'),
-    [type],
+    async () => {
+      const list = type
+        ? await db.categories.where('[type+is_archived]').equals([type, 0]).sortBy('sort_order')
+        : await db.categories.where('is_archived').equals(0).sortBy('sort_order');
+      return includeSystem ? list : list.filter((c) => !c.is_system);
+    },
+    [type, includeSystem],
   );
+}
+
+export function useDebts(): Debt[] | undefined {
+  return useLiveQuery(() => db.debts.toArray(), []);
+}
+
+export function useDebtMap(): Map<string, Debt> | undefined {
+  return useLiveQuery(async () => new Map((await db.debts.toArray()).map((d) => [d.id, d])), []);
+}
+
+/** Bir borcun bütün hərəkətləri (açılış, qaytarmalar, bağışlama sətirləri). */
+export function useDebtTransactions(debtId: string | undefined): Transaction[] | undefined {
+  return useLiveQuery(async (): Promise<Transaction[]> => (debtId ? db.transactions.where('debt_id').equals(debtId).sortBy('date') : []), [debtId]);
+}
+
+/** Bütün borc hərəkətləri — qalan məbləğləri hesablamaq üçün. */
+export function useDebtMovements(): Transaction[] | undefined {
+  return useLiveQuery(() => db.transactions.where('type').equals('debt').toArray(), []);
 }
 
 export function useCategoryMap(): Map<string, Category> | undefined {
