@@ -44,3 +44,28 @@ export function totalBalance(wallets: Wallet[], balances: Map<string, number>): 
   }
   return { total, savings, free: total - savings };
 }
+
+/**
+ * Qərar #26 — cüzdan qalığı mənfi ola bilməz. Məxaric/köçürmə üçün cüzdanda nə qədər pul var?
+ * Redaktədə köhnə əməliyyatın təsiri geri alınır (`exclude`), yoxsa öz məbləği özünə mane olar.
+ */
+export function availableForOutgoing(balances: Map<string, number>, walletId: string, exclude?: Transaction): number {
+  let available = balances.get(walletId) ?? 0;
+  if (!exclude) return available;
+  switch (exclude.type) {
+    case 'income':
+      if (exclude.wallet_id === walletId) available -= exclude.amount;
+      break;
+    case 'expense':
+      if (exclude.wallet_id === walletId) available += exclude.amount;
+      break;
+    case 'transfer':
+      if (exclude.wallet_id === walletId) available += exclude.amount;
+      if (exclude.to_wallet_id === walletId) available -= exclude.amount;
+      break;
+    case 'debt':
+      if (exclude.wallet_id === walletId) available += exclude.debt_direction === 'in' ? -exclude.amount : exclude.amount;
+      break;
+  }
+  return available;
+}

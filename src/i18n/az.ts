@@ -93,7 +93,9 @@ export const t = {
       wallet: 'Cüzdan seç',
       to_wallet: 'Fərqli hədəf cüzdan seç',
       category: 'Kateqoriya seç',
+      insufficient: 'Cüzdanda kifayət qədər pul yoxdur',
     } as Record<string, string>,
+    available: 'Mövcud',
     notFound: 'Əməliyyat tapılmadı',
   },
   keypad: {

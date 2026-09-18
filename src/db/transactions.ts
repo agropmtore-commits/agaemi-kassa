@@ -1,5 +1,6 @@
 import { db, newId, nowIso, type KassaDB, type Transaction, type TransactionType } from './schema';
 import { isIsoDate } from '../domain/dates';
+import { availableForOutgoing, walletBalances } from '../domain/balance';
 
 // Əməliyyat yaratma / dəyişmə / silmə — bütün yoxlamalar burada, UI-də deyil.
 
@@ -19,7 +20,8 @@ export type TxError =
   | 'date'          // yanlış format
   | 'wallet'        // cüzdan yoxdur / arxivdədir
   | 'to_wallet'     // köçürmədə hədəf yoxdur və ya eynidir
-  | 'category';     // kateqoriya yoxdur / növü uyğun deyil
+  | 'category'      // kateqoriya yoxdur / növü uyğun deyil
+  | 'insufficient'; // qərar #26: cüzdanda kifayət qədər pul yoxdur (məxaric / köçürmə)
 
 export class TxValidationError extends Error {
   constructor(public readonly errors: TxError[]) {
@@ -41,8 +43,8 @@ export function validateShape(input: TxInput): TxError[] {
   return errors;
 }
 
-/** Tam yoxlama: forma + bazadakı cüzdan/kateqoriya mövcudluğu. */
-export async function validateTx(input: TxInput, database: KassaDB = db): Promise<TxError[]> {
+/** Tam yoxlama: forma + bazadakı cüzdan/kateqoriya mövcudluğu + qalıq (redaktədə `existing` çıxılır). */
+export async function validateTx(input: TxInput, database: KassaDB = db, existing?: Transaction): Promise<TxError[]> {
   const errors = validateShape(input);
 
   const wallet = await database.wallets.get(input.wallet_id);
@@ -54,6 +56,12 @@ export async function validateTx(input: TxInput, database: KassaDB = db): Promis
   } else if (input.category_id) {
     const cat = await database.categories.get(input.category_id);
     if (!cat || cat.type !== input.type) errors.push('category');
+  }
+
+  if ((input.type === 'expense' || input.type === 'transfer') && !errors.includes('wallet') && !errors.includes('amount')) {
+    const [wallets, txs] = await Promise.all([database.wallets.toArray(), database.transactions.toArray()]);
+    const available = availableForOutgoing(walletBalances(wallets, txs), input.wallet_id, existing);
+    if (input.amount > available) errors.push('insufficient');
   }
 
   return [...new Set(errors)];
@@ -86,7 +94,7 @@ export async function createTransaction(input: TxInput, database: KassaDB = db):
 export async function updateTransaction(id: string, input: TxInput, database: KassaDB = db): Promise<Transaction> {
   const existing = await database.transactions.get(id);
   if (!existing) throw new Error(`Əməliyyat tapılmadı: ${id}`);
-  const errors = await validateTx(input, database);
+  const errors = await validateTx(input, database, existing);
   if (errors.length) throw new TxValidationError(errors);
   // Növ dəyişəndə köhnə növün sahələri (category_id / to_wallet_id) silinməlidir — ona görə put, update yox.
   const tx: Transaction = { id, ...normalize(input), created_at: existing.created_at, updated_at: nowIso() };

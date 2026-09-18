@@ -10,7 +10,8 @@ import {
 import { NumPad, displayRaw, useAmountInput } from '../../components/NumPad';
 import { Chip, PrimaryButton, Segmented, TopBar, useGoBack } from '../../components/ui';
 import { useToast } from '../../components/Toast';
-import { useCategories, useSetting, useWallets } from '../../hooks/useData';
+import { useBalances, useCategories, useSetting, useWallets } from '../../hooks/useData';
+import { availableForOutgoing } from '../../domain/balance';
 import { dayLabel, shiftDays, todayLocal } from '../../domain/dates';
 import { formatMoney } from '../../domain/money';
 import { t } from '../../i18n/az';
@@ -60,6 +61,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
 
   const wallets = useWallets();
   const lastWalletId = useSetting('last_wallet_id');
+  const balances = useBalances();
 
   const initialType = (existing?.type as FormType | undefined) ?? (params.get('type') as FormType | null) ?? 'expense';
   const [type, setType] = useState<FormType>(FORM_TYPES.includes(initialType) ? initialType : 'expense');
@@ -94,6 +96,10 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   const step = params.get('step') === '2' && amount.qepik > 0 && type !== 'transfer' ? 2 : 1;
   const style = TYPE_STYLE[type];
 
+  // Qərar #26 — cüzdan qalığı mənfi ola bilməz: məxaric/köçürmədə mövcud məbləğ (redaktədə köhnə təsir çıxılır)
+  const available = type !== 'income' && balances && walletId ? availableForOutgoing(balances.byWallet, walletId, existing) : undefined;
+  const insufficient = available !== undefined && amount.qepik > available;
+
   const baseInput = useMemo<Omit<TxInput, 'category_id'>>(
     () => ({ type, amount: amount.qepik, date, wallet_id: walletId, to_wallet_id: toWalletId, note }),
     [type, amount.qepik, date, walletId, toWalletId, note],
@@ -101,6 +107,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
 
   function goToStep2() {
     const errs = validateShape({ ...baseInput, category_id: 'pending' }).filter((e) => e !== 'category');
+    if (insufficient) errs.push('insufficient');
     setErrors(errs);
     if (errs.length) return;
     const next = new URLSearchParams(params);
@@ -218,9 +225,13 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
           {displayRaw(amount.raw)}
           <span className="ml-1 text-2xl opacity-70">₼</span>
         </p>
-        {errors.length > 0 && (
+        {errors.length > 0 ? (
           <p className="mt-1 text-sm text-expense">{errors.map((e) => t.form.errors[e]).join(' · ')}</p>
-        )}
+        ) : available !== undefined ? (
+          <p className={`tabular mt-1 text-sm ${insufficient ? 'text-expense font-semibold' : 'text-(--app-muted)'}`}>
+            {insufficient ? t.form.errors.insufficient : t.form.available} · {formatMoney(available)}
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -291,7 +302,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
         <NumPad onPress={amount.press} />
         <PrimaryButton
           className={`mt-3 ${style.bg}`}
-          disabled={amount.qepik === 0 || saving}
+          disabled={amount.qepik === 0 || saving || insufficient}
           onClick={() => (type === 'transfer' ? void save() : goToStep2())}
         >
           {type === 'transfer' ? t.common.save : t.common.next}

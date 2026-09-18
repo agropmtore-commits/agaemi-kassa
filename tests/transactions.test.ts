@@ -16,6 +16,9 @@ beforeEach(async () => {
   const wallets = await db.wallets.orderBy('sort_order').toArray();
   cash = wallets[0]!.id;
   card = wallets[1]!.id;
+  // qərar #26: cüzdanlarda pul olsun ki, məxaric/köçürmə testləri keçsin
+  await db.wallets.update(cash, { initial_balance: 100000 });
+  await db.wallets.update(card, { initial_balance: 500000 });
   food = (await db.categories.where({ type: 'expense' }).first())!.id;
   salary = (await db.categories.where({ type: 'income' }).first())!.id;
 });
@@ -87,5 +90,48 @@ describe('delete + restore (Geri al)', () => {
     expect(await db.transactions.count()).toBe(0);
     await restoreTransaction(deleted!, db);
     expect(await db.transactions.get(tx.id)).toEqual(tx);
+  });
+});
+
+describe('qərar #26 — cüzdan qalığı mənfi ola bilməz', () => {
+  it('rejects an expense larger than the wallet balance', async () => {
+    await db.wallets.update(cash, { initial_balance: 10000 });
+    await expect(
+      createTransaction({ type: 'expense', amount: 10001, date: '2026-09-18', wallet_id: cash, category_id: food }, db),
+    ).rejects.toMatchObject({ errors: ['insufficient'] });
+    await createTransaction({ type: 'expense', amount: 10000, date: '2026-09-18', wallet_id: cash, category_id: food }, db);
+    expect(await db.transactions.count()).toBe(1);
+  });
+
+  it('rejects a transfer larger than the source balance, counting earlier transactions', async () => {
+    await db.wallets.update(card, { initial_balance: 100000 });
+    await createTransaction({ type: 'expense', amount: 30000, date: '2026-09-18', wallet_id: card, category_id: food }, db);
+    await expect(
+      createTransaction({ type: 'transfer', amount: 70001, date: '2026-09-18', wallet_id: card, to_wallet_id: cash }, db),
+    ).rejects.toMatchObject({ errors: ['insufficient'] });
+    await createTransaction({ type: 'transfer', amount: 70000, date: '2026-09-18', wallet_id: card, to_wallet_id: cash }, db);
+  });
+
+  it('income is never blocked', async () => {
+    await createTransaction({ type: 'income', amount: 1, date: '2026-09-18', wallet_id: cash, category_id: salary }, db);
+  });
+
+  it('editing an expense does not count its own old amount against it', async () => {
+    await db.wallets.update(cash, { initial_balance: 10000 });
+    const tx = await createTransaction({ type: 'expense', amount: 8000, date: '2026-09-18', wallet_id: cash, category_id: food }, db);
+    // qalıq 2000; 8000 → 9000 dəyişməsi mümkündür (köhnə 8000 geri qayıdır), 10001 mümkün deyil
+    await updateTransaction(tx.id, { type: 'expense', amount: 9000, date: '2026-09-18', wallet_id: cash, category_id: food }, db);
+    await expect(
+      updateTransaction(tx.id, { type: 'expense', amount: 10001, date: '2026-09-18', wallet_id: cash, category_id: food }, db),
+    ).rejects.toMatchObject({ errors: ['insufficient'] });
+  });
+
+  it('moving an expense to another wallet checks the new wallet', async () => {
+    await db.wallets.update(cash, { initial_balance: 10000 });
+    await db.wallets.update(card, { initial_balance: 500 });
+    const tx = await createTransaction({ type: 'expense', amount: 8000, date: '2026-09-18', wallet_id: cash, category_id: food }, db);
+    await expect(
+      updateTransaction(tx.id, { type: 'expense', amount: 8000, date: '2026-09-18', wallet_id: card, category_id: food }, db),
+    ).rejects.toMatchObject({ errors: ['insufficient'] });
   });
 });

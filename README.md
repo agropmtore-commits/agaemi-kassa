@@ -38,6 +38,7 @@ pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını
 | 23 | Test cihazı | Kompüterdə Chrome telefon rejimi + sənin iPhone (Safari); Android-ə xas hissələr Agaeminin telefonunda | Sənin telefonun iPhone-dur |
 | 24 | Məbləğ klaviaturası | **Öz böyük klaviaturamız** (0-9, vergül, sil) | Hər telefonda eyni, ","/"." problemi yoxdur |
 | 25 | Əlavə etmə axını | **Məbləğ → "Növbəti" → kateqoriyaya toxun = yadda saxlanır**; 5 saniyə "Geri al" | Ən az toxunuş; cüzdan (sonuncu) və tarix (bu gün) avtomatik |
+| 26 | Mənfi qalıq | **Cüzdan qalığı mənfi ola bilməz** — məxaric/köçürmə mövcud məbləğdən çox ola bilməz; forma "Mövcud · X ₼" göstərir və bloklayır. Mədaxil düzəlişi/silinməsi bloklanmır | Kartda 1 000 varsa 1 000-dən çox nağda keçməsin; səhv gəliri düzəltmək mümkün qalsın |
 
 ## 1. Problem / Məqsəd
 
@@ -72,6 +73,7 @@ Pulun fiziki olaraq harada olduğu. Hər cüzdanın öz qalığı var.
 - Başlanğıcda: **Nağd**, **Kart** (istifadəçi əlavə edə bilər: ikinci kart, "ev seyfi" və s.)
 - Hər cüzdana **başlanğıc balans** verilir ("hazırda nağdda 300, kartda 1 200 ₼ var")
 - Cüzdan qalığı = başlanğıc + mədaxil − məxaric − çıxan köçürmə + gələn köçürmə ± borc hərəkətləri
+- **Qalıq mənfi ola bilməz** (qərar #26): məxaric və köçürmə cüzdandakı mövcud məbləğlə məhdudlaşır
 - **Yığım** tipli cüzdan — yığım hədəfləri üçün (bax 5.2)
 
 ### 3.2 Əməliyyat növləri
