@@ -5,6 +5,9 @@ interface State {
   error: Error | null;
 }
 
+const TRANSIENT_DB_ERROR = /UnknownError|Unable to open cursor|Indexed Database server|AbortError|QuotaExceededError/i;
+const AUTO_RELOAD_KEY = 'kassa.autoReloadAt';
+
 /** Gözlənilməz xəta (məs. baza versiyası, yaddaş) — boş ağ ekran əvəzinə mesaj + "Yenilə". */
 export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = { error: null };
@@ -15,6 +18,19 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('Kassa xətası', error, info.componentStack);
+    // iOS Safari-nin keçici IndexedDB xətaları ("Unable to open cursor", "Connection to Indexed Database server lost")
+    // adətən səhifə yenilənəndə keçir — bir dəfə özü yenilənsin (dövr olmasın deyə 60 s qoruma)
+    if (TRANSIENT_DB_ERROR.test(error.message)) {
+      const last = Number(sessionStorage.getItem(AUTO_RELOAD_KEY) ?? 0);
+      if (Date.now() - last > 60_000) {
+        try {
+          sessionStorage.setItem(AUTO_RELOAD_KEY, String(Date.now()));
+        } catch {
+          /* boş */
+        }
+        window.location.reload();
+      }
+    }
   }
 
   render() {

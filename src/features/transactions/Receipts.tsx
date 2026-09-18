@@ -16,7 +16,14 @@ export function useAttachments(transactionId: string | undefined): Attachment[] 
 
 /** Şəkli olan əməliyyat id-ləri — siyahıda 📎 üçün. Yalnız indeks açarları oxunur, bloblar yox. */
 export function useAttachmentTxIds(): Set<string> | undefined {
-  return useLiveQuery(async () => new Set((await db.attachments.orderBy('transaction_id').uniqueKeys()) as string[]), []);
+  return useLiveQuery(async () => {
+    try {
+      return new Set((await db.attachments.orderBy('transaction_id').uniqueKeys()) as string[]);
+    } catch (e) {
+      console.warn('attachments keys', e); // iOS IndexedDB kursor xətası — siyahı 📎-siz də açılsın
+      return new Set<string>();
+    }
+  }, []);
 }
 
 function useObjectUrl(blob: Blob | undefined): string | undefined {

@@ -193,7 +193,8 @@ export class KassaDB extends Dexie {
     });
     this.on('populate', () => seedDatabase(this));
     // Köhnə bazalar: yeni sistem kateqoriyaları (Mərhələ 6) açılışda əlavə olunur
-    this.on('ready', () => ensureSystemCategories(this));
+    // iOS Safari bəzən açılışda IndexedDB xətası verir — bu yoxlama uğursuz olsa tətbiq yenə açılsın
+    this.on('ready', () => ensureSystemCategories(this).catch((e: unknown) => console.warn('ensureSystemCategories', e)));
   }
 }
 
