@@ -39,6 +39,19 @@
         "--strictPort"
       ],
       "port": 5174
+    },
+    {
+      "name": "dev-test2",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "port": 5175
     }
   ]
 }

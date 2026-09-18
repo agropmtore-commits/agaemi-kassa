@@ -4,7 +4,11 @@ import { Download, Share2, Upload } from 'lucide-react';
 import { ConfirmSheet } from '../../components/Sheet';
 import { Card, PrimaryButton, SectionTitle, Segmented, TopBar } from '../../components/ui';
 import { useToast } from '../../components/Toast';
-import { backupFileName, BackupError, createBackup, importBackup, parseBackup, serializeBackup, type BackupFile, type ImportMode } from '../../db/backup';
+import {
+  backupFileName, BackupError, createBackup, createFullBackup, fullBackupFileName, importFullBackup, readBackupFile, serializeBackup,
+  type FullBackup, type ImportMode,
+} from '../../db/backup';
+import { canShareFiles, deliverFile } from '../../lib/share';
 import { setSetting } from '../../db/settings';
 import { useSetting } from '../../hooks/useData';
 import { shortDate, todayLocal } from '../../domain/dates';
@@ -17,32 +21,20 @@ export function BackupPage() {
   const lastBackupAt = useSetting('last_backup_at');
   const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<{ backup: BackupFile; name: string } | null>(null);
+  const [pending, setPending] = useState<{ full: FullBackup; name: string } | null>(null);
   const [mode, setMode] = useState<ImportMode>('replace');
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState('');
 
-  async function exportBackup(method: 'share' | 'download') {
+  async function exportBackup(method: 'share' | 'download', kind: 'json' | 'zip') {
     setBusy(true);
     try {
-      const text = serializeBackup(await createBackup());
-      const name = backupFileName();
-      const file = new File([text], name, { type: 'application/json' });
-      if (method === 'share' && navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: name });
-        } catch (e) {
-          if ((e as DOMException).name === 'AbortError') return; // istifadəçi imtina etdi — backup sayılmır
-          throw e;
-        }
-      } else {
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      }
+      const file =
+        kind === 'zip'
+          ? new File([await createFullBackup()], fullBackupFileName(), { type: 'application/zip' })
+          : new File([serializeBackup(await createBackup())], backupFileName(), { type: 'application/json' });
+      const result = await deliverFile(file, method);
+      if (result === 'aborted') return; // istifadəçi imtina etdi — backup sayılmır
       await setSetting('last_backup_at', new Date().toISOString());
       toast({ message: t.backup.exported });
     } finally {
@@ -55,8 +47,8 @@ export function BackupPage() {
     setPending(null);
     if (!file) return;
     try {
-      const backup = parseBackup(await file.text());
-      setPending({ backup, name: file.name });
+      const full = await readBackupFile(file);
+      setPending({ full, name: file.name });
     } catch (e) {
       setError(e instanceof BackupError ? t.backup.errors[e.code]! : t.backup.errors.read!);
     }
@@ -67,7 +59,7 @@ export function BackupPage() {
     if (!pending) return;
     setBusy(true);
     try {
-      const result = await importBackup(pending.backup, mode);
+      const result = await importFullBackup(pending.full, mode);
       setConfirm(false);
       setPending(null);
       toast({ message: t.backup.imported(result.transactions) });
@@ -77,7 +69,7 @@ export function BackupPage() {
     }
   }
 
-  const canShare = typeof navigator.canShare === 'function';
+  const canShare = canShareFiles();
   const lastLabel = lastBackupAt ? t.backup.daysAgo(daysSince(lastBackupAt)) : t.backup.never;
 
   return (
@@ -91,7 +83,7 @@ export function BackupPage() {
         <p className="mb-3 text-xs text-(--app-muted)">{t.backup.exportHint}</p>
         <div className="flex gap-2">
           {canShare && (
-            <PrimaryButton disabled={busy} onClick={() => void exportBackup('share')}>
+            <PrimaryButton disabled={busy} onClick={() => void exportBackup('share', 'json')}>
               <span className="inline-flex items-center gap-2">
                 <Share2 size={18} aria-hidden /> {t.common.share}
               </span>
@@ -100,7 +92,7 @@ export function BackupPage() {
           <button
             type="button"
             disabled={busy}
-            onClick={() => void exportBackup('download')}
+            onClick={() => void exportBackup('download', 'json')}
             className={`inline-flex items-center justify-center gap-2 rounded-xl border border-(--app-border) py-3.5 font-semibold disabled:opacity-40 ${canShare ? 'px-4' : 'w-full'}`}
           >
             <Download size={18} aria-hidden /> {t.common.download}
@@ -109,10 +101,27 @@ export function BackupPage() {
       </Card>
 
       <section className="mt-5">
+        <SectionTitle>{t.backup.full}</SectionTitle>
+        <Card className="p-4">
+          <p className="mb-3 text-xs text-(--app-muted)">{t.backup.fullHint}</p>
+          <div className="flex gap-2">
+            {canShare && (
+              <button type="button" disabled={busy} onClick={() => void exportBackup('share', 'zip')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-(--app-border) py-3 font-semibold disabled:opacity-40">
+                <Share2 size={18} aria-hidden /> {t.backup.fullExport}
+              </button>
+            )}
+            <button type="button" disabled={busy} onClick={() => void exportBackup('download', 'zip')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-(--app-border) py-3 font-semibold disabled:opacity-40">
+              <Download size={18} aria-hidden /> {canShare ? t.common.download : t.backup.fullExport}
+            </button>
+          </div>
+        </Card>
+      </section>
+
+      <section className="mt-5">
         <SectionTitle>{t.backup.import}</SectionTitle>
         <Card className="p-4">
-          <p className="mb-3 text-xs text-(--app-muted)">{t.backup.importHint}</p>
-          <input ref={fileInput} type="file" accept="application/json,.json" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
+          <p className="mb-3 text-xs text-(--app-muted)">{t.backup.importHintFull}</p>
+          <input ref={fileInput} type="file" accept="application/json,application/zip,.json,.zip" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
@@ -127,7 +136,8 @@ export function BackupPage() {
                 <span className="font-medium">{pending.name}</span>
                 <br />
                 <span className="text-(--app-muted)">
-                  {t.backup.preview(pending.backup.data.transactions.length, pending.backup.data.wallets.length, shortDate(pending.backup.exported_at.slice(0, 10)))}
+                  {t.backup.preview(pending.full.backup.data.transactions.length, pending.full.backup.data.wallets.length, shortDate(pending.full.backup.exported_at.slice(0, 10)))}
+                  {pending.full.attachments.length > 0 ? ` · ${t.backup.previewFull(pending.full.attachments.length)}` : ''}
                 </span>
               </p>
               <Segmented

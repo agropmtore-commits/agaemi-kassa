@@ -9,6 +9,7 @@ import { useCategoryMap, useDebtMap, useMonthTransactions, useWalletMap, useWall
 import { currentMonthKey, dayLabel, monthLabel, shiftMonth } from '../../domain/dates';
 import { formatMoney, parseMoney } from '../../domain/money';
 import { groupByDay, monthSummary } from '../../domain/stats';
+import { useAttachmentTxIds } from './Receipts';
 import { t } from '../../i18n/az';
 
 type TypeFilter = 'all' | TransactionType;
@@ -27,6 +28,7 @@ export function TransactionsPage() {
   const wallets = useWalletMap();
   const walletList = useWallets();
   const debts = useDebtMap();
+  const withReceipts = useAttachmentTxIds();
 
   const filtered = useMemo(() => {
     if (!txs || !categories) return undefined;
@@ -148,7 +150,7 @@ export function TransactionsPage() {
                 </div>
                 <Card className="divide-y divide-(--app-border) overflow-hidden">
                   {g.items.map((tx) => (
-                    <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} debts={debts} onClick={() => navigate(tx.debt_id ? `/more/debts/${tx.debt_id}` : `/tx/${tx.id}`)} />
+                    <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} debts={debts} hasAttachment={withReceipts?.has(tx.id)} onClick={() => navigate(tx.debt_id ? `/more/debts/${tx.debt_id}` : `/tx/${tx.id}`)} />
                   ))}
                 </Card>
               </section>

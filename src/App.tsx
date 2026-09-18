@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
@@ -19,6 +19,8 @@ import { DebtsPage } from './features/debts/DebtsPage';
 import { DebtDetailPage } from './features/debts/DebtDetailPage';
 import { GoalsPage } from './features/goals/GoalsPage';
 import { GoalDetailPage } from './features/goals/GoalDetailPage';
+import { ExportPage } from './features/settings/ExportPage';
+import { cleanupOrphanAttachments } from './db/attachments';
 import { LockScreen } from './features/pin/LockScreen';
 import { useSettings } from './hooks/useData';
 import { useLock } from './hooks/useLock';
@@ -27,6 +29,11 @@ import { useTheme } from './hooks/useTheme';
 /** Kök: tema + ilk açılış qapısı + PIN kilidi. Onboarding bitməyibsə hər yol /onboarding-ə yönlənir. */
 function Root() {
   useTheme();
+  // README §6: Chrome-a "bu saytın məlumatını silmə" tələbi; §5.7: yetim şəkillərin təmizlənməsi (bir dəfə)
+  useEffect(() => {
+    void navigator.storage?.persist?.().catch(() => undefined);
+    void cleanupOrphanAttachments().catch(() => undefined);
+  }, []);
   const settings = useSettings();
   const onboarded = settings?.onboarded;
   const { locked, unlock } = useLock(settings ? Boolean(settings.pin_hash) : undefined, settings?.lock_timeout_min ?? 5);
@@ -68,6 +75,7 @@ export function App() {
               <Route path="more/debts/:id" element={<DebtDetailPage />} />
               <Route path="more/goals" element={<GoalsPage />} />
               <Route path="more/goals/:id" element={<GoalDetailPage />} />
+              <Route path="more/export" element={<ExportPage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
             <Route path="add" element={<TransactionFormPage />} />

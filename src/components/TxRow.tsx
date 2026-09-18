@@ -1,4 +1,4 @@
-import { ArrowLeftRight, HandCoins } from 'lucide-react';
+import { ArrowLeftRight, HandCoins, Paperclip } from 'lucide-react';
 import type { Category, Debt, Transaction, Wallet } from '../db/schema';
 import { openingDirection } from '../domain/debt';
 import { formatMoney } from '../domain/money';
@@ -10,11 +10,13 @@ interface Props {
   wallets: Map<string, Wallet>;
   /** borc sətirləri üçün: şəxs və hərəkət adı */
   debts?: Map<string, Debt>;
+  /** qəbz şəkli var — 📎 */
+  hasAttachment?: boolean;
   onClick?: () => void;
 }
 
 /** Siyahı sətri: ikon · ad + qeyd/cüzdan · məbləğ (növə görə rəng və işarə). */
-export function TxRow({ tx, categories, wallets, debts, onClick }: Props) {
+export function TxRow({ tx, categories, wallets, debts, hasAttachment, onClick }: Props) {
   const cat = tx.category_id ? categories.get(tx.category_id) : undefined;
   const wallet = wallets.get(tx.wallet_id);
   const toWallet = tx.to_wallet_id ? wallets.get(tx.to_wallet_id) : undefined;
@@ -74,7 +76,10 @@ export function TxRow({ tx, categories, wallets, debts, onClick }: Props) {
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{title}</span>
+        <span className="flex items-center gap-1 truncate font-medium">
+          <span className="truncate">{title}</span>
+          {hasAttachment && <Paperclip size={14} className="shrink-0 text-(--app-muted)" aria-label={t.receipts.add} />}
+        </span>
         {subtitle && <span className="block truncate text-xs text-(--app-muted)">{subtitle}</span>}
       </span>
       <span className={`tabular shrink-0 font-semibold ${amountClass}`}>{amountText}</span>

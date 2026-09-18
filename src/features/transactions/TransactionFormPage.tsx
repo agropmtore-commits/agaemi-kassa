@@ -4,6 +4,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Settings2, Trash2 } from 'lucide-react';
 import { db, type Template, type Transaction, type TransactionType } from '../../db/schema';
 import { bumpTemplateUse, sortTemplates } from '../../db/templates';
+import { addAttachment, deleteAttachment } from '../../db/attachments';
+import { ReceiptStrip, useAttachments, type ReceiptItem } from './Receipts';
 import {
   createTransaction, deleteTransaction, restoreTransaction, TxValidationError, updateTransaction,
   validateShape, type TxError, type TxInput,
@@ -78,6 +80,13 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   const [templateCategoryId, setTemplateCategoryId] = useState<string | null>(null);
   const [appliedTemplateId, setAppliedTemplateId] = useState<string | null>(null);
   const templates = useLiveQuery(async () => (existing ? [] : sortTemplates(await db.templates.toArray())), [existing?.id]);
+  // README §5.7 — qəbz şəkilləri: mövcud olanlar bazadan, yeni seçilənlər yadda saxlayana qədər yaddaşda
+  const attachments = useAttachments(existing?.id);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const receiptItems: ReceiptItem[] = [
+    ...(attachments ?? []).map((a) => ({ key: a.id, blob: a.blob })),
+    ...pendingFiles.map((f, i) => ({ key: `pending-${i}`, blob: f })),
+  ];
 
   const categories = useCategories(type === 'transfer' ? undefined : type);
 
@@ -146,9 +155,11 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
       if (existing) {
         const before = existing;
         await updateTransaction(existing.id, input);
+        await savePending(existing.id);
         toast({ message: t.form.updated, action: { label: t.common.undo, onClick: () => restoreTransaction(before) } });
       } else {
         const created = await createTransaction(input);
+        await savePending(created.id);
         if (appliedTemplateId) void bumpTemplateUse(appliedTemplateId);
         toast({
           message: `${t.form.saved[type]} · ${formatMoney(created.amount)}`,
@@ -164,6 +175,17 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function savePending(txId: string) {
+    for (const file of pendingFiles) {
+      try {
+        await addAttachment(txId, file);
+      } catch {
+        toast({ message: t.receipts.failed });
+      }
+    }
+    setPendingFiles([]);
   }
 
   async function remove() {
@@ -317,6 +339,15 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
             className="rounded-full border border-(--app-border) bg-(--app-surface) px-3 py-1 text-sm"
           />
         </ChipRow>
+
+        <ReceiptStrip
+          items={receiptItems}
+          onAdd={(files) => setPendingFiles((p) => [...p, ...files])}
+          onRemove={(key) => {
+            if (key.startsWith('pending-')) setPendingFiles((p) => p.filter((_, i) => `pending-${i}` !== key));
+            else void deleteAttachment(key).then(() => toast({ message: t.receipts.removed }));
+          }}
+        />
 
         <ChipRow label={t.form.note}>
           {noteOpen ? (

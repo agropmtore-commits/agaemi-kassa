@@ -17,6 +17,7 @@ const ITEMS: Item[] = [
   { label: t.more.wallets, icon: '👛', to: '/more/wallets' },
   { label: t.more.categories, icon: '🏷️', to: '/more/categories' },
   { label: t.more.backup, icon: '💾', to: '/more/backup' },
+  { label: t.more.exportData, icon: '📊', to: '/more/export' },
   { label: t.more.templates, icon: '⚡', to: '/more/templates' },
   { label: t.more.debts, icon: '🤝', to: '/more/debts' },
   { label: t.more.goals, icon: '🎯', to: '/more/goals' },

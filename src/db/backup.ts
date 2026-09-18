@@ -1,9 +1,9 @@
 import {
-  db, type Budget, type Category, type Debt, type KassaDB, type SettingRow, type Template, type Transaction, type Wallet,
+  db, type Attachment, type Budget, type Category, type Debt, type KassaDB, type SettingRow, type Template, type Transaction, type Wallet,
 } from './schema';
 import { todayLocal } from '../domain/dates';
 
-// README §6 — "Yalnız məlumat" backup: JSON. Qəbz şəkilləri (ZIP) Mərhələ 8-də.
+// README §6 — "Yalnız məlumat" backup: JSON; "Tam" backup: ZIP (JSON + qəbz şəkilləri).
 
 export const BACKUP_APP = 'agaemi-kassa';
 export const BACKUP_FORMAT = 1;
@@ -64,6 +64,10 @@ export async function createBackup(database: KassaDB = db): Promise<BackupFile> 
 
 export function backupFileName(date = todayLocal()): string {
   return `kassa-backup-${date}.json`;
+}
+
+export function fullBackupFileName(date = todayLocal()): string {
+  return `kassa-full-${date}.zip`;
 }
 
 export function serializeBackup(backup: BackupFile): string {
@@ -136,4 +140,76 @@ export async function importBackup(backup: BackupFile, mode: ImportMode, databas
     },
   );
   return { transactions: data.transactions.length, wallets: data.wallets.length, categories: data.categories.length };
+}
+
+// ---------- Tam backup (ZIP) ----------
+
+const ZIP_DATA = 'kassa.json';
+const ZIP_META = 'attachments.json';
+const ZIP_DIR = 'attachments';
+
+interface AttachmentMeta {
+  id: string;
+  transaction_id: string;
+  mime: string;
+  width: number;
+  height: number;
+  size: number;
+  created_at: string;
+  file: string;
+}
+
+export interface FullBackup {
+  backup: BackupFile;
+  attachments: Attachment[];
+}
+
+/** JSON + attachments/<id>.jpg — bir ZIP faylında. JSZip yalnız lazım olanda yüklənir (~100 KB). */
+export async function createFullBackup(database: KassaDB = db): Promise<Blob> {
+  const { default: JSZip } = await import('jszip');
+  const backup = await createBackup(database);
+  const zip = new JSZip();
+  zip.file(ZIP_DATA, serializeBackup(backup));
+  const meta: AttachmentMeta[] = [];
+  await database.attachments.each((a) => {
+    const ext = a.mime === 'image/png' ? 'png' : 'jpg';
+    const file = `${ZIP_DIR}/${a.id}.${ext}`;
+    meta.push({ id: a.id, transaction_id: a.transaction_id, mime: a.mime, width: a.width, height: a.height, size: a.size, created_at: a.created_at, file });
+    zip.file(file, a.blob);
+  });
+  zip.file(ZIP_META, JSON.stringify(meta));
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+}
+
+/** .json və ya .zip faylını oxu. ZIP "PK" imzası ilə tanınır — uzantı vacib deyil. */
+export async function readBackupFile(file: Blob): Promise<FullBackup> {
+  const head = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+  const isZip = head[0] === 0x50 && head[1] === 0x4b;
+  if (!isZip) return { backup: parseBackup(await file.text()), attachments: [] };
+
+  const { default: JSZip } = await import('jszip');
+  const zip = await JSZip.loadAsync(file);
+  const dataEntry = zip.file(ZIP_DATA);
+  if (!dataEntry) throw new BackupError('invalid');
+  const backup = parseBackup(await dataEntry.async('string'));
+  const attachments: Attachment[] = [];
+  const metaEntry = zip.file(ZIP_META);
+  if (metaEntry) {
+    const meta = JSON.parse(await metaEntry.async('string')) as AttachmentMeta[];
+    for (const m of meta) {
+      const entry = zip.file(m.file);
+      if (!entry) continue;
+      const bytes = await entry.async('arraybuffer');
+      attachments.push({ id: m.id, transaction_id: m.transaction_id, blob: new Blob([bytes], { type: m.mime }), mime: m.mime, width: m.width, height: m.height, size: m.size, created_at: m.created_at });
+    }
+  }
+  return { backup, attachments };
+}
+
+/** importBackup + şəkillər. replace: köhnə şəkillər silinir. */
+export async function importFullBackup(full: FullBackup, mode: ImportMode, database: KassaDB = db): Promise<ImportResult & { attachments: number }> {
+  const result = await importBackup(full.backup, mode, database);
+  if (mode === 'replace') await database.attachments.clear();
+  if (full.attachments.length) await database.attachments.bulkPut(full.attachments);
+  return { ...result, attachments: full.attachments.length };
 }

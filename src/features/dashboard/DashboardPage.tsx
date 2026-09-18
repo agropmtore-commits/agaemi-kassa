@@ -15,6 +15,7 @@ import { shortDate, todayLocal } from '../../domain/dates';
 import { currentMonthKey, shiftMonth } from '../../domain/dates';
 import { formatMoney, splitMoney } from '../../domain/money';
 import { delta, monthSummary } from '../../domain/stats';
+import { useAttachmentTxIds } from '../transactions/Receipts';
 import { t } from '../../i18n/az';
 
 /** README §4.3 — Panel: qalıqlar, bu ay, büdcə (Mərhələ 4), son əməliyyatlar, 3 böyük düymə. */
@@ -29,6 +30,7 @@ export function DashboardPage() {
   const wallets = useWalletMap();
   const budgets = useLiveQuery(() => db.budgets.toArray(), []);
   const debts = useDebtMap();
+  const withReceipts = useAttachmentTxIds();
   const debtMovements = useDebtMovements();
   const today = todayLocal();
   const debtInfo = useMemo(() => (debts && debtMovements ? debtSummary([...debts.values()], debtMovements, today) : undefined), [debts, debtMovements, today]);
@@ -241,7 +243,7 @@ export function DashboardPage() {
           ) : (
             <Card className="divide-y divide-(--app-border) overflow-hidden">
               {recent.map((tx) => (
-                <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} debts={debts} onClick={() => navigate(tx.debt_id ? `/more/debts/${tx.debt_id}` : `/tx/${tx.id}`)} />
+                <TxRow key={tx.id} tx={tx} categories={categories} wallets={wallets} debts={debts} hasAttachment={withReceipts?.has(tx.id)} onClick={() => navigate(tx.debt_id ? `/more/debts/${tx.debt_id}` : `/tx/${tx.id}`)} />
               ))}
             </Card>
           )
