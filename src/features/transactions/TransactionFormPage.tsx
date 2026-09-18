@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Trash2 } from 'lucide-react';
-import { db, type Transaction, type TransactionType } from '../../db/schema';
+import { Settings2, Trash2 } from 'lucide-react';
+import { db, type Template, type Transaction, type TransactionType } from '../../db/schema';
+import { bumpTemplateUse, sortTemplates } from '../../db/templates';
 import {
   createTransaction, deleteTransaction, restoreTransaction, TxValidationError, updateTransaction,
   validateShape, type TxError, type TxInput,
@@ -73,8 +74,25 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(existing?.note));
   const [errors, setErrors] = useState<TxError[]>([]);
   const [saving, setSaving] = useState(false);
+  // README §5.3 — şablon tətbiq olunubsa kateqoriya məlumdur: addım 2 atlanır, düymə "Yadda saxla" olur
+  const [templateCategoryId, setTemplateCategoryId] = useState<string | null>(null);
+  const [appliedTemplateId, setAppliedTemplateId] = useState<string | null>(null);
+  const templates = useLiveQuery(async () => (existing ? [] : sortTemplates(await db.templates.toArray())), [existing?.id]);
 
   const categories = useCategories(type === 'transfer' ? undefined : type);
+
+  function applyTemplate(tpl: Template) {
+    setType(tpl.type);
+    if (tpl.amount) amount.set(tpl.amount);
+    if (tpl.wallet_id && wallets?.some((w) => w.id === tpl.wallet_id)) setWalletId(tpl.wallet_id);
+    if (tpl.note) {
+      setNote(tpl.note);
+      setNoteOpen(true);
+    }
+    setTemplateCategoryId(tpl.category_id ?? null);
+    setAppliedTemplateId(tpl.id);
+    setErrors([]);
+  }
 
   // Default cüzdanlar yüklənəndə: sonuncu istifadə olunan, yoxdursa birinci
   useEffect(() => {
@@ -95,6 +113,8 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
 
   const step = params.get('step') === '2' && amount.qepik > 0 && type !== 'transfer' ? 2 : 1;
   const style = TYPE_STYLE[type];
+  // Şablonun kateqoriyası bu növ üçün hələ mövcuddursa birbaşa yadda saxlanır
+  const directCategory = type !== 'transfer' && templateCategoryId && categories?.some((c) => c.id === templateCategoryId) ? templateCategoryId : null;
 
   // Qərar #26 — cüzdan qalığı mənfi ola bilməz: məxaric/köçürmədə mövcud məbləğ (redaktədə köhnə təsir çıxılır)
   const available = type !== 'income' && balances && walletId ? availableForOutgoing(balances.byWallet, walletId, existing) : undefined;
@@ -129,6 +149,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
         toast({ message: t.form.updated, action: { label: t.common.undo, onClick: () => restoreTransaction(before) } });
       } else {
         const created = await createTransaction(input);
+        if (appliedTemplateId) void bumpTemplateUse(appliedTemplateId);
         toast({
           message: `${t.form.saved[type]} · ${formatMoney(created.amount)}`,
           action: { label: t.common.undo, onClick: async () => void (await deleteTransaction(created.id)) },
@@ -207,10 +228,26 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
         }
       />
 
+      {templates && templates.length > 0 && (
+        <div className="mb-2 flex items-center gap-2 overflow-x-auto py-1 [scrollbar-width:none]" role="group" aria-label={t.templates.chipsLabel}>
+          {templates.map((tpl) => (
+            <Chip key={tpl.id} active={appliedTemplateId === tpl.id} onClick={() => applyTemplate(tpl)}>
+              ⚡ {tpl.name}
+              {tpl.amount ? ` · ${formatMoney(tpl.amount, { symbol: false })}` : ''}
+            </Chip>
+          ))}
+          <Link to="/more/templates" aria-label={t.templates.manage} className="shrink-0 rounded-full p-1.5 text-(--app-muted)">
+            <Settings2 size={18} aria-hidden />
+          </Link>
+        </div>
+      )}
+
       <Segmented
         value={type}
         onChange={(v) => {
           setType(v);
+          setTemplateCategoryId(null);
+          setAppliedTemplateId(null);
           setErrors([]);
         }}
         options={[
@@ -303,10 +340,15 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
         <PrimaryButton
           className={`mt-3 ${style.bg}`}
           disabled={amount.qepik === 0 || saving || insufficient}
-          onClick={() => (type === 'transfer' ? void save() : goToStep2())}
+          onClick={() => (type === 'transfer' ? void save() : directCategory ? void save(directCategory) : goToStep2())}
         >
-          {type === 'transfer' ? t.common.save : t.common.next}
+          {type === 'transfer' || directCategory ? t.common.save : t.common.next}
         </PrimaryButton>
+        {directCategory && (
+          <button type="button" onClick={goToStep2} disabled={amount.qepik === 0 || insufficient} className="mt-1 w-full py-1.5 text-sm font-medium text-(--app-muted) disabled:opacity-40">
+            {categories?.find((c) => c.id === directCategory)?.icon} {categories?.find((c) => c.id === directCategory)?.name} · {t.templates.changeCategory}
+          </button>
+        )}
       </div>
     </div>
   );

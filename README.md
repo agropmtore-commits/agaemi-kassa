@@ -4,7 +4,7 @@ Agaemi üçün şəxsi (ev) büdcə və kassa sistemi. Məqsəd — əlinə gəl
 **mədaxil**, xərclədiyi hər pulu **məxaric** kimi qeyd etmək və istənilən anda
 pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını** görmək.
 
-> **Status:** **MVP hazırdır (v1.0.0)** — Mərhələ 1–4 tamamlandı. Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaemi istifadəyə başlayır; Mərhələ 5 (şablonlar, PIN).
+> **Status:** **v1.1.0** — Mərhələ 1–5 tamamlandı (MVP + şablonlar, PIN). Canlı: https://agropmtore-commits.github.io/agaemi-kassa/ · Növbəti: Agaeminin rəyi; Mərhələ 6 (borc izləmə).
 > Agaemi üçün sadə dildə xülasə: [AGAEMI_UCUN.md](AGAEMI_UCUN.md)
 
 ---
@@ -42,6 +42,8 @@ pulun **haradan gəldiyini**, **hara getdiyini** və **nə qədər qaldığını
 | 27 | Diaqram rəngləri | **Mədaxil yaşılı #059669, məxaric qırmızısı #dc2626** (CVD yoxlamasından keçir, ΔE 8,6); kateqoriya rəngləri dataviz istinad palitrasından; dairəvi diaqramda ≤ 6 dilim (qalanı "Qalan"), hər diaqramın cədvəl əkizi var | Rəng korluğunda da oxunsun; 13 kateqoriya eyni anda diaqrama sığmır |
 | 28 | Arxiv qaydaları | **Cüzdan:** qalığı 0 deyilsə və ya sonuncu aktivdirsə arxivlənmir; **kateqoriya:** həmişə arxivlənir (köhnə əməliyyatlar qalır), sistem kateqoriyası yox | Pul "itməsin", tarixçə pozulmasın |
 | 29 | Backup məzmunu | PIN və bərpa sözü **backup-a düşmür**; idxalda cihazın teması qorunur | Fayl Telegram/Drive-da gəzir |
+| 30 | Şablon axını | Şablonda kateqoriya varsa **addım 2 atlanır** — düymə "Yadda saxla" olur, altında "Kateqoriyanı dəyiş" | Ən az toxunuş: çip + Yadda saxla = 2 toxunuş |
+| 31 | PIN kilidi | PBKDF2-SHA256 hash; sessiya `sessionStorage`-də — tam bağlananda kilid, arxa planda vaxta görə; **ekran kilididir, şifrələmə deyil** (Ayarlarda yazılıb) | Server yoxdur; dürüstlük |
 
 ## 1. Problem / Məqsəd
 
@@ -221,8 +223,8 @@ Hədəf = Yığım tipli cüzdan + hədəf məbləği + son tarix (istəyə bağ
 - Ayarlarda idarə edilir; ən çox istifadə olunanlar avtomatik önə çıxır
 
 ### 5.4 PIN kilidi
-- 4 rəqəmli PIN; hash + salt ilə saxlanır (SHA-256, Web Crypto)
-- Tətbiq açılanda və 5 dəqiqə arxa planda qalandan sonra soruşulur
+- 4 rəqəmli PIN; hash + salt ilə saxlanır (PBKDF2-SHA256, 100 000 iterasiya, Web Crypto); 5 səhvdən sonra artan gözləmə (30 s, 60 s…)
+- Tətbiq açılanda və 5 dəqiqə (Ayarlarda: dərhal / 1 / 5 / 15 / 30 dəq) arxa planda qalandan sonra soruşulur
 - PIN qurularkən **bərpa sözü** soruşulur (hash ilə saxlanır) — unudulsa onunla yeni PIN qoyulur, məlumat itmir
 - Dürüst qeyd: bu **ekran kilididir, şifrələmə deyil** — telefonu USB ilə kompüterə qoşub DevTools ilə məlumatı oxumaq mümkündür. Ev istifadəsi üçün yetərlidir; tam şifrələmə istənilsə ayrıca müzakirə (unudulan PIN = itən məlumat)
 
@@ -351,8 +353,8 @@ Settings
 - [x] **Mərhələ 3 — Panel və statistika** — 18 sentyabr 2026: ana panel; diaqramlar, dövr seçimi, müqayisə
 - [x] **Mərhələ 4 — Büdcə, ayarlar, backup** — 18 sentyabr 2026: limitlər və xəbərdarlıq; cüzdan/kateqoriya idarəetməsi; JSON ixrac/idxal + xatırlatma
 - [x] ✅ **MVP hazır (v1.0.0, 18 sentyabr 2026)** — Agaemi istifadəyə başlayır, real rəy toplanır
-- [ ] **Mərhələ 5 — Rahatlıq** ← *növbəti*: şablonlar, PIN (qaranlıq rejim artıq var — Ayarlar → Tema)
-- [ ] **Mərhələ 6 — Borc izləmə**
+- [x] **Mərhələ 5 — Rahatlıq** — 18 sentyabr 2026: şablonlar (çiplər + idarə), PIN kilidi (bərpa sözü, vaxt limiti), qaranlıq rejim (Mərhələ 4-dən)
+- [ ] **Mərhələ 6 — Borc izləmə** ← *növbəti*
 - [ ] **Mərhələ 7 — Yığım hədəfi**
 - [ ] **Mərhələ 8 — Qəbz şəkli, tam backup (ZIP), Excel/CSV ixrac**
 - [ ] **Sonra (istəyə bağlı)**: Capacitor APK, Google Drive backup, təkrarlanan əməliyyatlar
@@ -447,6 +449,7 @@ npm run icons      # public/icons/*.png-ni SVG-dən yenidən yarat (sharp)
 **Plan v1 — tamamlandı (18 sentyabr 2026).** 23 qərar verildi (bölmə 0). Açıq sual qalmayıb.
 
 - [ ] `AGAEMI_UCUN.md` Agaemiyə göstərilir, rəyi alınır (xüsusən kateqoriya siyahısı və şablon nümunələri)
+- [x] Mərhələ 5 — rahatlıq (18 sentyabr 2026): şablonlar (əlavə et ekranında ⚡ çiplər → kateqoriya məlumdursa birbaşa "Yadda saxla"; ən çox istifadə olunan önə), PIN kilidi (onboarding addımı + Ayarlar: qoy / dəyiş / sil, bərpa sözü ilə bərpa, vaxt limiti)
 - [x] Mərhələ 4 — büdcə, ayarlar, backup (18 sentyabr 2026): kateqoriya/ümumi aylıq limitlər (panel: yaşıl/sarı/qırmızı + banner), cüzdan və kateqoriya idarəetməsi (ad, ikon, rəng, arxiv qaydaları), JSON ixrac (paylaş/yüklə) və idxal (əvəz et/birləşdir), backup xatırlatması, tema, sıfırlama
 - [x] Mərhələ 3 — statistika (18 sentyabr 2026): dövr (ay / il / aralıq), KPI + əvvəlki dövrlə müqayisə, kateqoriya/mənbə payı (halqa + sıralı cədvəl), kateqoriya trendi, son 12 ay, cüzdan üzrə xərc, orta gündəlik; paneldə keçən ayla müqayisə
 - [x] Mərhələ 2 — əməliyyatlar (18 sentyabr 2026): onboarding, mədaxil/məxaric/köçürmə formu (2 addım), siyahı + filtr + axtarış, redaktə/silmə + "Geri al", real qalıqlar, paneldə "bu ay"

@@ -14,16 +14,22 @@ import { CategoriesPage } from './features/categories/CategoriesPage';
 import { BackupPage } from './features/settings/BackupPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
-import { useSetting } from './hooks/useData';
+import { TemplatesPage } from './features/templates/TemplatesPage';
+import { LockScreen } from './features/pin/LockScreen';
+import { useSettings } from './hooks/useData';
+import { useLock } from './hooks/useLock';
 import { useTheme } from './hooks/useTheme';
 
-/** Kök: tema + ilk açılış qapısı. Onboarding bitməyibsə hər yol /onboarding-ə yönlənir. */
+/** Kök: tema + ilk açılış qapısı + PIN kilidi. Onboarding bitməyibsə hər yol /onboarding-ə yönlənir. */
 function Root() {
   useTheme();
-  const onboarded = useSetting('onboarded');
+  const settings = useSettings();
+  const onboarded = settings?.onboarded;
+  const { locked, unlock } = useLock(settings ? Boolean(settings.pin_hash) : undefined, settings?.lock_timeout_min ?? 5);
   const { pathname } = useLocation();
 
-  if (onboarded === undefined) return null; // ayarlar yüklənir
+  if (onboarded === undefined || locked === undefined) return null; // ayarlar yüklənir
+  if (locked) return <LockScreen onUnlock={unlock} />;
   if (!onboarded && pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
   if (onboarded && pathname === '/onboarding') return <Navigate to="/" replace />;
   return <Outlet />;
@@ -53,6 +59,7 @@ export function App() {
               <Route path="more/categories" element={<CategoriesPage />} />
               <Route path="more/backup" element={<BackupPage />} />
               <Route path="more/settings" element={<SettingsPage />} />
+              <Route path="more/templates" element={<TemplatesPage />} />
             </Route>
             {/* Tam ekran formalar — aşağı naviqasiya yoxdur */}
             <Route path="add" element={<TransactionFormPage />} />

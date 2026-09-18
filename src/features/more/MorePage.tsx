@@ -17,7 +17,7 @@ const ITEMS: Item[] = [
   { label: t.more.wallets, icon: '👛', to: '/more/wallets' },
   { label: t.more.categories, icon: '🏷️', to: '/more/categories' },
   { label: t.more.backup, icon: '💾', to: '/more/backup' },
-  { label: t.more.templates, icon: '⚡', phase: 5 },
+  { label: t.more.templates, icon: '⚡', to: '/more/templates' },
   { label: t.more.debts, icon: '🤝', phase: 6 },
   { label: t.more.goals, icon: '🐖', phase: 7 },
   { label: t.more.settings, icon: '⚙️', to: '/more/settings' },

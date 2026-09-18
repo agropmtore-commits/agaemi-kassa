@@ -4,13 +4,16 @@ import { Plus } from 'lucide-react';
 import { Card, PrimaryButton, Segmented } from '../../components/ui';
 import { createWallet, updateWallet } from '../../db/wallets';
 import { setSetting } from '../../db/settings';
+import { setPin } from '../../db/pin';
+import { PinSetup } from '../pin/PinPad';
+import { markActive } from '../../hooks/useLock';
 import { useWallets } from '../../hooks/useData';
 import { formatMoney, parseMoney } from '../../domain/money';
 import { t } from '../../i18n/az';
 
-type Step = 'welcome' | 'wallets' | 'done';
+type Step = 'welcome' | 'wallets' | 'pin' | 'pinSetup' | 'done';
 
-/** README §4.0 — ilk açılış: salam → cüzdan qalıqları → hazır. (PIN addımı Mərhələ 5-də əlavə olunur.) */
+/** README §4.0 — ilk açılış: salam → cüzdan qalıqları → PIN (istəyə bağlı) → hazır. */
 export function OnboardingPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('welcome');
@@ -44,7 +47,7 @@ export function OnboardingPage() {
       if (q !== w.initial_balance) await updateWallet(w.id, { initial_balance: q });
     }
     setError('');
-    setStep('done');
+    setStep('pin');
   }
 
   async function addWallet() {
@@ -148,6 +151,35 @@ export function OnboardingPage() {
             <PrimaryButton onClick={() => void saveWallets()}>{t.common.next}</PrimaryButton>
           </div>
         </>
+      )}
+
+      {step === 'pin' && (
+        <>
+          <div className="my-auto text-center">
+            <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-3xl bg-brand-600 text-5xl shadow">🔒</div>
+            <h1 className="text-2xl font-bold">{t.pin.onboardingTitle}</h1>
+            <p className="mt-3 text-(--app-muted)">{t.pin.onboardingText}</p>
+          </div>
+          <PrimaryButton onClick={() => setStep('pinSetup')}>{t.pin.onboardingYes}</PrimaryButton>
+          <button type="button" onClick={() => setStep('done')} className="mt-2 w-full py-3 text-sm font-medium text-(--app-muted)">
+            {t.pin.onboardingNo}
+          </button>
+        </>
+      )}
+
+      {step === 'pinSetup' && (
+        <div className="pt-4">
+          <PinSetup
+            onDone={async (pin, recovery) => {
+              markActive(); // yeni qurulan PIN dərhal soruşulmasın
+              await setPin(pin, recovery);
+              setStep('done');
+            }}
+          />
+          <button type="button" onClick={() => setStep('pin')} className="mt-4 w-full py-2 text-sm font-medium text-(--app-muted)">
+            {t.common.back}
+          </button>
+        </div>
       )}
 
       {step === 'done' && (

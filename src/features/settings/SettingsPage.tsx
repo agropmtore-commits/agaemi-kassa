@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ConfirmSheet } from '../../components/Sheet';
+import { ConfirmSheet, Sheet } from '../../components/Sheet';
+import { useToast } from '../../components/Toast';
+import { clearPin, setPin, verifyPin } from '../../db/pin';
+import { PinEntry, PinSetup } from '../pin/PinPad';
+import { markActive } from '../../hooks/useLock';
 import { Card, SectionTitle, Segmented, TopBar } from '../../components/ui';
 import { inputClass } from '../../components/pickers';
 import { db, type Theme } from '../../db/schema';
@@ -11,14 +15,36 @@ import { shortDate } from '../../domain/dates';
 import { t } from '../../i18n/az';
 
 const REMINDER_OPTIONS = [0, 7, 14, 30] as const;
+const TIMEOUT_OPTIONS = [0, 1, 5, 15, 30] as const;
 
-/** README §4.5 — tema, backup xatırlatması, məlumat, sıfırlama, haqqında. PIN — Mərhələ 5. */
+type PinFlow = { kind: 'set' } | { kind: 'change'; verified: boolean } | { kind: 'remove' };
+
+/** README §4.5 — tema, PIN, backup xatırlatması, məlumat, sıfırlama, haqqında. */
 export function SettingsPage() {
   const settings = useSettings();
   const { theme, setTheme } = useTheme();
+  const toast = useToast();
   const txCount = useLiveQuery(() => db.transactions.count(), []);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetWord, setResetWord] = useState('');
+  const [pinFlow, setPinFlow] = useState<PinFlow | null>(null);
+  const [pinError, setPinError] = useState<string | undefined>();
+  const hasPin = Boolean(settings?.pin_hash);
+
+  async function checkCurrent(pin: string) {
+    if (!(await verifyPin(pin))) {
+      setPinError(t.pin.wrong);
+      return;
+    }
+    setPinError(undefined);
+    if (pinFlow?.kind === 'remove') {
+      await clearPin();
+      setPinFlow(null);
+      toast({ message: t.pin.removed });
+    } else if (pinFlow?.kind === 'change') {
+      setPinFlow({ kind: 'change', verified: true });
+    }
+  }
 
   async function resetAll() {
     await db.delete();
@@ -60,7 +86,40 @@ export function SettingsPage() {
       </Card>
 
       <SectionTitle>{t.settings.pin}</SectionTitle>
-      <Card className="p-3 text-sm text-(--app-muted)">{t.common.comingSoon(5)}</Card>
+      <Card className="p-3">
+        <p className="text-sm">
+          {t.pin.title}: <span className={`font-semibold ${hasPin ? 'text-income' : 'text-(--app-muted)'}`}>{hasPin ? t.pin.enabled : t.pin.disabled}</span>
+        </p>
+        <div className="mt-3 flex gap-2">
+          {hasPin ? (
+            <>
+              <button type="button" onClick={() => { setPinError(undefined); setPinFlow({ kind: 'change', verified: false }); }} className="flex-1 rounded-xl border border-(--app-border) py-2.5 text-sm font-semibold">
+                {t.pin.change}
+              </button>
+              <button type="button" onClick={() => { setPinError(undefined); setPinFlow({ kind: 'remove' }); }} className="flex-1 rounded-xl border border-expense py-2.5 text-sm font-semibold text-expense">
+                {t.pin.remove}
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setPinFlow({ kind: 'set' })} className="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white">
+              {t.pin.set}
+            </button>
+          )}
+        </div>
+        {hasPin && (
+          <label className="mt-3 block text-sm">
+            <span className="mb-1 block text-xs font-semibold text-(--app-muted)">{t.pin.timeout}</span>
+            <select value={settings?.lock_timeout_min ?? 5} onChange={(e) => void setSetting('lock_timeout_min', Number(e.target.value))} className={inputClass}>
+              {TIMEOUT_OPTIONS.map((m) => (
+                <option key={m} value={m}>
+                  {t.pin.timeouts[m]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <p className="mt-3 text-xs text-(--app-muted)">{t.pin.honest}</p>
+      </Card>
 
       <SectionTitle>{t.settings.data}</SectionTitle>
       <Card className="p-3">
@@ -75,6 +134,21 @@ export function SettingsPage() {
 
       <SectionTitle>{t.settings.about}</SectionTitle>
       <Card className="p-3 text-sm text-(--app-muted)">{t.settings.version(__APP_VERSION__)}</Card>
+
+      <Sheet open={pinFlow !== null} onClose={() => setPinFlow(null)} title={pinFlow?.kind === 'remove' ? t.pin.remove : pinFlow?.kind === 'change' ? t.pin.change : t.pin.set}>
+        {pinFlow?.kind === 'set' || (pinFlow?.kind === 'change' && pinFlow.verified) ? (
+          <PinSetup
+            onDone={async (pin, recovery) => {
+              markActive(); // yeni qurulan PIN dərhal soruşulmasın
+              await setPin(pin, recovery);
+              setPinFlow(null);
+              toast({ message: t.pin.saved });
+            }}
+          />
+        ) : pinFlow ? (
+          <PinEntry title={t.pin.enter} error={pinError} onComplete={(p) => void checkCurrent(p)} />
+        ) : null}
+      </Sheet>
 
       <ConfirmSheet
         open={resetOpen}
