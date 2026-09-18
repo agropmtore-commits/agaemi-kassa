@@ -35,7 +35,7 @@ export default defineConfig({
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         id: BASE,
-        name: 'Agaemi Kassa',
+        name: 'Kassa',
         short_name: 'Kassa',
         description: 'Şəxsi büdcə — mədaxil, məxaric, statistika',
         lang: 'az',

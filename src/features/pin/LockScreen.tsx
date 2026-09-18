@@ -73,7 +73,7 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
     <div className="mx-auto flex min-h-full max-w-md flex-col px-4 pt-[max(env(safe-area-inset-top),24px)] pb-[max(env(safe-area-inset-bottom),16px)]">
       <div className="mt-6 mb-4 text-center">
         <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-brand-600 text-3xl shadow">🔒</div>
-        <p className="text-sm font-semibold text-(--app-muted)">Agaemi Kassa</p>
+        <p className="text-sm font-semibold text-(--app-muted)">{t.app.name}</p>
       </div>
 
       {mode === 'pin' && (

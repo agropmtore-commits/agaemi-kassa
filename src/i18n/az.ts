@@ -1,7 +1,7 @@
 // Bütün istifadəçi mətnləri bir yerdə (README §13). Kodda sərbəst mətn yazılmır.
 export const t = {
   app: {
-    name: 'Agaemi Kassa',
+    name: 'Kassa',
     shortName: 'Kassa',
   },
   nav: {
@@ -150,7 +150,7 @@ export const t = {
     settings: 'Ayarlar',
   },
   onboarding: {
-    welcomeTitle: 'Agaemi Kassa-ya xoş gəldin',
+    welcomeTitle: 'Kassa-ya xoş gəldin',
     welcomeText: 'Pulun hardan gəlib hara getdiyini bir baxışda gör. Əvvəlcə pulun hazırda harada olduğunu deyək.',
     walletsTitle: 'Hazırda nə qədər pulun var?',
     walletsText: 'Hər cüzdan üçün bugünkü qalığı yaz. Boş qalsa 0 sayılır — sonra Ayarlardan dəyişmək olar.',
@@ -265,7 +265,7 @@ export const t = {
     resetWord: 'SİL',
     resetMismatch: 'Söz uyğun gəlmir — böyük hərflərlə SİL yaz',
     about: 'Haqqında',
-    version: (v: string) => `Agaemi Kassa · v${v}`,
+    version: (v: string) => `Kassa · v${v}`,
   },
   pin: {
     title: 'PIN kilidi',
